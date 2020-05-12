@@ -26,7 +26,8 @@ final class Base64Tests: XCTestCase {
         let start = Date()
         execute()
         let time = Int(-start.timeIntervalSinceNow * 1000)
-        print("\(name) | took: \(time)ms")
+        try! statsLogger.benchmark(name: name, units: "ms")
+        try! statsLogger.addEntry(result: String(time))
     }
 
     private let optionsLength64: NSData.Base64EncodingOptions = [.lineLength64Characters]
@@ -41,19 +42,21 @@ final class Base64Tests: XCTestCase {
 
 
     private func testWithOptions(name: String, execute: (_ : NSData.Base64EncodingOptions) -> ()) {
-        timing(name: "\(name)\t - No options\t", execute: { execute([]) })
-        timing(name: "\(name)\t - Length64\t", execute: { execute([optionsLength64]) })
-        timing(name: "\(name)\t - Length64CR\t", execute: { execute([optionsLength64withCR]) })
-        timing(name: "\(name)\t - Length64LF\t", execute: { execute([optionsLength64withLF]) })
-        timing(name: "\(name)\t - Length64CRLF\t", execute: { execute([optionsLength64withCRLF]) })
-        timing(name: "\(name)\t - Length76\t", execute: { execute([optionsLength76]) })
-        timing(name: "\(name)\t - Length76CR\t", execute: { execute([optionsLength76withCR]) })
-        timing(name: "\(name)\t - Length76LF\t", execute: { execute([optionsLength76withLF]) })
-        timing(name: "\(name)\t - Length76CRLF\t", execute: { execute([optionsLength76withCRLF]) })
+        timing(name: "\(name) - No options", execute: { execute([]) })
+        timing(name: "\(name) - Length64", execute: { execute([optionsLength64]) })
+        timing(name: "\(name) - Length64CR", execute: { execute([optionsLength64withCR]) })
+        timing(name: "\(name) - Length64LF", execute: { execute([optionsLength64withLF]) })
+        timing(name: "\(name) - Length64CRLF", execute: { execute([optionsLength64withCRLF]) })
+        timing(name: "\(name) - Length76", execute: { execute([optionsLength76]) })
+        timing(name: "\(name) - Length76CR", execute: { execute([optionsLength76withCR]) })
+        timing(name: "\(name) - Length76LF", execute: { execute([optionsLength76withLF]) })
+        timing(name: "\(name) - Length76CRLF", execute: { execute([optionsLength76withCRLF]) })
     }
 
 
-    func test_base64EncodeShortSpeed() {
+    func test_base64EncodeShortSpeed() throws {
+
+        try statsLogger.section(name: "Base64Tests.base64EncodeShortSpeed")
 
         let runs = 1000_000
         let bytes1 = Array(UInt8(0)...UInt8(255))
@@ -102,11 +105,6 @@ final class Base64Tests: XCTestCase {
         let twoByteNSData = NSData(data: twoByteData)
         let threeByteNSData = NSData(data: threeByteData)
 
-
-        print("Number of invocations: \(runs)")
-        print("------------------------------------------")
-        print("Encoding Short Data blocks")
-
         testWithOptions(name: "Foundation-nsdata-toString") { options in
             for _ in 1...runs {
                 _ = nsdata1.base64EncodedString(options: options)
@@ -131,7 +129,7 @@ final class Base64Tests: XCTestCase {
             }
         }
 
-        testWithOptions(name: "Foundation-data-toData\t") { options in
+        testWithOptions(name: "Foundation-data-toData") { options in
             for _ in 1...runs {
                 _ = data1.base64EncodedData(options: options)
                 _ = data2.base64EncodedData(options: options)
@@ -139,7 +137,7 @@ final class Base64Tests: XCTestCase {
             }
         }
 
-        timing(name: "Base64Kit\t\t\t\t\t") {
+        timing(name: "Base64Kit") {
             for _ in 1...runs {
                 _ = Base64.encode(bytes: data1)
                 _ = Base64.encode(bytes: data2)
@@ -147,56 +145,56 @@ final class Base64Tests: XCTestCase {
             }
         }
 
-        timing(name: "Foundation - 0 bytes\t\t\t\t") {
+        timing(name: "Foundation - 0 bytes") {
             for _ in 1...runs {
                 _ = zeroByteData.base64EncodedString()
                 _ = zeroByteNSData.base64EncodedString()
             }
         }
 
-        timing(name: "Foundation - 1 byte\t\t\t\t") {
+        timing(name: "Foundation - 1 byte") {
             for _ in 1...runs {
                 _ = oneByteData.base64EncodedString()
                 _ = oneByteData.base64EncodedData()
             }
         }
 
-        timing(name: "Foundation - 2 bytes\t\t\t\t") {
+        timing(name: "Foundation - 2 bytes") {
             for _ in 1...runs {
                 _ = twoByteData.base64EncodedString()
                 _ = twoByteData.base64EncodedData()
             }
         }
 
-        timing(name: "Foundation - 3 bytes\t\t\t\t") {
+        timing(name: "Foundation - 3 bytes") {
             for _ in 1...runs {
                 _ = threeByteData.base64EncodedString()
                 _ = threeByteData.base64EncodedData()
             }
         }
 
-        timing(name: "Base64Kit - 0 bytes\t\t\t\t") {
+        timing(name: "Base64Kit - 0 bytes") {
             for _ in 1...runs {
                 _ = Base64.encode(bytes: zeroByteData)
                 _ = Base64.encode(bytes: zeroByteNSData)
             }
         }
 
-        timing(name: "Base64Kit - 1 byte\t\t\t\t") {
+        timing(name: "Base64Kit - 1 byte") {
             for _ in 1...runs {
                 _ = Base64.encode(bytes: oneByteData)
                 _ = Base64.encode(bytes: oneByteNSData)
             }
         }
 
-        timing(name: "Base64Kit - 2 bytes\t\t\t\t") {
+        timing(name: "Base64Kit - 2 bytes") {
             for _ in 1...runs {
                 _ = Base64.encode(bytes: twoByteData)
                 _ = Base64.encode(bytes: twoByteNSData)
             }
         }
 
-        timing(name: "Base64Kit - 3 bytes\t\t\t\t") {
+        timing(name: "Base64Kit - 3 bytes") {
             for _ in 1...runs {
                 _ = Base64.encode(bytes: threeByteData)
                 _ = Base64.encode(bytes: threeByteNSData)
@@ -205,7 +203,8 @@ final class Base64Tests: XCTestCase {
     }
 
 
-    func test_base64EncodeLongSpeed() {
+    func test_base64EncodeLongSpeed() throws {
+        try statsLogger.section(name: "Base64Tests.base64EncodeLongSpeed")
 
         let runs = 100
 
@@ -221,11 +220,6 @@ final class Base64Tests: XCTestCase {
         XCTAssertEqual(nsdata1String, data1String)
         XCTAssertEqual(nsdata1String, b64kit1String)
         XCTAssertEqual(b64kit1String, data1String)
-
-
-        print("Number of invocations: \(runs)")
-        print("------------------------------------------")
-        print("Encoding Long Data block")
 
         testWithOptions(name: "Foundation-nsdata-toString") { options in
             for _ in 1...runs {
@@ -245,13 +239,13 @@ final class Base64Tests: XCTestCase {
             }
         }
 
-        testWithOptions(name: "Foundation-data-toData\t") { options in
+        testWithOptions(name: "Foundation-data-toData") { options in
             for _ in 1...runs {
                 _ = data1.base64EncodedData(options: options)
             }
         }
 
-        timing(name: "Base64Kit\t\t\t\t\t") {
+        timing(name: "Base64Kit") {
             for _ in 1...runs {
                 _ = Base64.encode(bytes: data1)
             }
@@ -259,7 +253,8 @@ final class Base64Tests: XCTestCase {
     }
 
 
-    func test_base64DecodeShortSpeed() {
+    func test_base64DecodeShortSpeed() throws {
+        try statsLogger.section(name: "Base64Tests.base64DecodeShortSpeed")
 
         let runs = 1000_000
         let bytes1 = Array(UInt8(0)...UInt8(255))
@@ -277,11 +272,7 @@ final class Base64Tests: XCTestCase {
         let encodedData3 = data3.base64EncodedData()
         let encodedString3 = data3.base64EncodedString()
 
-        print("Number of invocations: \(runs)")
-        print("------------------------------------------")
-        print("Decoding Short Strings")
-
-        timing(name: "nsdata-decodeString\t\t\t\t") {
+        timing(name: "nsdata-decodeString") {
             for _ in 1...runs {
                 _ = NSData(base64Encoded: encodedString1)
                 _ = NSData(base64Encoded: encodedString2)
@@ -289,7 +280,7 @@ final class Base64Tests: XCTestCase {
             }
         }
 
-        timing(name: "nsdata-decodeString\t - Ignore Unknown\t") {
+        timing(name: "nsdata-decodeString - Ignore Unknown") {
             for _ in 1...runs {
                 _ = NSData(base64Encoded: encodedString1, options: .ignoreUnknownCharacters)
                 _ = NSData(base64Encoded: encodedString2, options: .ignoreUnknownCharacters)
@@ -297,7 +288,7 @@ final class Base64Tests: XCTestCase {
             }
         }
 
-        timing(name: "nsdata-decodeData\t\t\t\t") {
+        timing(name: "nsdata-decodeData") {
             for _ in 1...runs {
                 _ = NSData(base64Encoded: encodedData1)
                 _ = NSData(base64Encoded: encodedData2)
@@ -305,7 +296,7 @@ final class Base64Tests: XCTestCase {
             }
         }
 
-        timing(name: "nsdata-decodeData\t - Ignore Unknown\t") {
+        timing(name: "nsdata-decodeData - Ignore Unknown") {
             for _ in 1...runs {
                 _ = NSData(base64Encoded: encodedData1, options: .ignoreUnknownCharacters)
                 _ = NSData(base64Encoded: encodedData2, options: .ignoreUnknownCharacters)
@@ -313,57 +304,52 @@ final class Base64Tests: XCTestCase {
             }
         }
 
-        timing(name: "Base64kit\t\t\t\t\t") {
+        timing(name: "Base64kit") {
             for _ in 1...runs {
 	        _ = try! encodedString1.base64decoded()
 	        _ = try! encodedString2.base64decoded()
 	        _ = try! encodedString3.base64decoded()
 	    }
         }
-        print("------------------------------------------")
     }
 
 
-    func test_base64DecodeLongSpeed() {
+    func test_base64DecodeLongSpeed() throws {
+        try statsLogger.section(name: "Base64Tests.base64DecodeLongSpeed")
 
         let runs = 100
         let data1 = Data(randomData)
         let encodedData1 = data1.base64EncodedData()
         let encodedString1 = data1.base64EncodedString()
 
-        print("Number of invocations: \(runs)")
-        print("------------------------------------------")
-        print("Decoding Long Strings")
-
-        timing(name: "nsdata-decodeString\t\t\t\t") {
+        timing(name: "nsdata-decodeString") {
             for _ in 1...runs {
                 _ = NSData(base64Encoded: encodedString1)
             }
         }
 
-        timing(name: "nsdata-decodeString\t - Ignore Unknown\t") {
+        timing(name: "nsdata-decodeString - Ignore Unknown") {
             for _ in 1...runs {
                 _ = NSData(base64Encoded: encodedString1, options: .ignoreUnknownCharacters)
             }
         }
 
-        timing(name: "nsdata-decodeData\t\t\t\t") {
+        timing(name: "nsdata-decodeData") {
             for _ in 1...runs {
                 _ = NSData(base64Encoded: encodedData1)
             }
         }
 
-        timing(name: "nsdata-decodeData\t - Ignore Unknown\t") {
+        timing(name: "nsdata-decodeData - Ignore Unknown") {
             for _ in 1...runs {
                 _ = NSData(base64Encoded: encodedData1, options: .ignoreUnknownCharacters)
             }
         }
 
-        timing(name: "Base64kit\t\t\t\t\t") {
+        timing(name: "Base64kit") {
             for _ in 1...runs {
 	        _ = try! encodedString1.base64decoded()
 	    }
         }
-        print("------------------------------------------")
     }
 }
