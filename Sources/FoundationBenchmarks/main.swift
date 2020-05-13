@@ -2,31 +2,44 @@ import Foundation
 import FoundationBenchmarksDB
 
 
-struct ToolChain {
-    let name: String
-    let dbid: Int64
+// Find the version, using --version, of the default swfit in the path
+private func findDefaultSwiftVersion() -> String? {
+    let pipe = Pipe()
+    let process = Process()
+    process.executableURL = URL(fileURLWithPath: "/bin/sh")
+    process.arguments = ["-c", "swift --version" ]
+    process.standardOutput = pipe.fileHandleForWriting
+    try! process.run()
+    process.waitUntilExit()
+    let input = String(data: pipe.fileHandleForReading.availableData, encoding: .utf8)
+    if let parts = input?.split(separator: "\n").first?.split(separator: " ") {
+        for idx in 0..<parts.count - 1 {
+            if parts[idx] == "version" {
+                let v = parts[idx + 1]
+                return String(v)
+            }
+        }
+    }
+    return nil
 }
 
 
-func validateToolChains(arguments: ArraySlice<String>) throws -> [ToolChain] {
+private func validateToolChains(arguments: ArraySlice<String>) throws -> [ToolChain] {
     var toolChains: [ToolChain] = []
     let fm = FileManager.default
-    print("Connecting to db")
     let db = try BenchmarksDB()
-    print("createing tables")
     try db.createTables()
-    print("created tables")
 
     guard !arguments.isEmpty else {
         print("No toolchain specified, running using default 'swift' executable in path")
         let id = try db.addToolChain(name: "default")
-        return [ ToolChain(name: "default", dbid: id) ]
+        return [ ToolChain(dbid: id, name: "default") ]
     }
 
     for arg in arguments {
         let baseName: String
         if arg == "default" {
-            baseName = arg
+            baseName = "default-" + (findDefaultSwiftVersion() ?? "")
         } else {
             let baseURL = URL(fileURLWithPath: arg)
             let executableURL = baseURL.appendingPathComponent("usr/bin/swift")
@@ -37,31 +50,43 @@ func validateToolChains(arguments: ArraySlice<String>) throws -> [ToolChain] {
         }
         print("Adding toolchain:", baseName)
         let id = try db.addToolChain(name: baseName)
-        print("Added with id:", id)
-        toolChains.append(ToolChain(name: arg, dbid: id))
+        toolChains.append(ToolChain(dbid: id, name: arg))
     }
 
     return toolChains
 }
 
 
-let toolChains = try! validateToolChains(arguments:  CommandLine.arguments.dropFirst(1))
-for toolChain in toolChains {
+private func runTests(using toolChains: [ToolChain]) throws {
+    for toolChain in toolChains {
 
-    let process = Process()
-    var env = ProcessInfo.processInfo.environment
-    env["BENCHMARKS_DBID"] = toolChain.dbid.description
-    process.environment = env
+        let process = Process()
+        var env = ProcessInfo.processInfo.environment
+        env["BENCHMARKS_DBID"] = toolChain.dbid.description
+        process.environment = env
 
-    if toolChain.name == "default" {
-        print("Running with default toolChain")
-        process.executableURL = URL(fileURLWithPath: "/bin/sh")
-        process.arguments = ["-c", "swift test -c release" ]
-    } else {
-        print("Running with toolChain: \(toolChain.name) test -c release")
-        process.executableURL = URL(fileURLWithPath: toolChain.name).appendingPathComponent("usr/bin/swift")
-        process.arguments = ["test", "-c", "release" ]
+        print("Running with toolChain: \(toolChain.name)")
+        if toolChain.name == "default" {
+            process.executableURL = URL(fileURLWithPath: "/bin/sh")
+            process.arguments = ["-c", "swift test -c release" ]
+        } else {
+            process.executableURL = URL(fileURLWithPath: toolChain.name).appendingPathComponent("usr/bin/swift")
+            process.arguments = ["test", "-c", "release" ]
+        }
+        try! process.run()
+        process.waitUntilExit()
+
+        if process.terminationStatus != 0 {
+            print("Failed to run test for tool chain '\(toolChain.name)'")
+            exit(1)
+        }
     }
-    try! process.run()
-    process.waitUntilExit()
 }
+
+
+let args = CommandLine.arguments.dropFirst(1)
+if args.first != "--show" {
+    let toolChains = try validateToolChains(arguments: args)
+    try runTests(using: toolChains)
+}
+try showStatsIn(database: "")

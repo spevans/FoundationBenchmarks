@@ -25,9 +25,9 @@ final class Base64Tests: XCTestCase {
     private func timing(name: String, execute: () -> ()) {
         let start = Date()
         execute()
-        let time = Int(-start.timeIntervalSinceNow * 1000)
+        let time = Decimal(Int(-start.timeIntervalSinceNow * 1000))
         try! statsLogger.benchmark(name: name, units: "ms")
-        try! statsLogger.addEntry(result: String(time))
+        try! statsLogger.addEntry(result: time)
     }
 
     private let optionsLength64: NSData.Base64EncodingOptions = [.lineLength64Characters]

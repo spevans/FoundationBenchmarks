@@ -1,6 +1,43 @@
 // Created 12-05-2020
 
 import SQLite
+import Foundation
+
+public struct ToolChain {
+    public let dbid: Int64
+    public let name: String
+
+    public init(dbid: Int64, name: String) {
+        self.dbid = dbid
+        self.name = name
+    }
+}
+
+
+public struct Section {
+    public let dbid: Int64
+    public let name: String
+    public let benchmarks: [Benchmark]
+
+    public init(dbid: Int64, name: String, benchmarks: [Benchmark]) {
+        self.dbid = dbid
+        self.name = name
+        self.benchmarks = benchmarks
+    }
+}
+
+
+public struct Benchmark {
+    public let dbid: Int64
+    public let name: String
+    public let units: String
+
+    public init(dbid: Int64, name: String, units: String) {
+        self.dbid = dbid
+        self.name = name
+        self.units = units
+    }
+}
 
 
 public final class BenchmarksDB {
@@ -116,13 +153,48 @@ INSERT INTO benchmarks (bnch_sect_id, bnch_name, bnch_units)
 
 
     @discardableResult
-    public func addEntry(toolChainId: Int64, benchmarkId: Int64, result: String) throws -> Int64 {
+    public func addEntry(toolChainId: Int64, benchmarkId: Int64, result: Decimal) throws -> Int64 {
         let stmt = try connection.prepare(
 """
 INSERT INTO entries (entr_tlch_id, entr_bnch_id, entr_result)
      VALUES (?, ?, ?)
 """)
-        try stmt.run(toolChainId, benchmarkId, result)
+        try stmt.run(toolChainId, benchmarkId, result.description)
         return connection.lastInsertRowid
+    }
+
+
+    public func benchmarkEntry(toolChainId: Int64, benchmarkId: Int64) throws -> Decimal? {
+        let benchmarkEntryQuery = try connection.prepare(entries.filter(entryToolChainId == toolChainId)
+            .filter(entryBenchmarkId == benchmarkId))
+        for row in benchmarkEntryQuery  {
+            if let value = Int64(row[entryResult]) { return Decimal(value) }
+        }
+        return nil
+    }
+
+
+    public func listToolChains() throws -> [ToolChain] {
+        var result: [ToolChain] = []
+
+        for row in try connection.prepare(toolChains.order(toolChainId)) {
+            result.append(ToolChain(dbid: row[toolChainId], name: row[toolChainName]))
+        }
+        return result
+    }
+
+
+    public func listSections() throws -> [Section] {
+        var results: [Section] = []
+
+        for row in try connection.prepare(sections.order(sectionId)) {
+            var results2: [Benchmark] = []
+            for row2 in try connection.prepare(benchmarks.filter(benchmarkSectionId == row[sectionId])
+                .order(benchmarkId)) {
+                results2.append(Benchmark(dbid: row2[benchmarkId], name: row2[benchmarkName], units: row2[benchmarkUnits]))
+                }
+            results.append(Section(dbid: row[sectionId], name: row[sectionName], benchmarks: results2))
+        }
+        return results
     }
 }

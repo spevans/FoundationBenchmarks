@@ -53,7 +53,7 @@ final class StatsLogger {
     }
 
 
-    func addEntry(result: String) throws {
+    func addEntry(result: Decimal) throws {
         let padding = String(repeating: " ", count: 50 - benchmarkName.count)
         print("\(benchmarkName)\(padding): \(result) \(benchmarkUnits)")
         if let db = self.db {
