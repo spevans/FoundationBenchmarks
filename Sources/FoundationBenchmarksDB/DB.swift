@@ -25,10 +25,13 @@ import Foundation
 public struct ToolChain {
     public let dbid: Int64
     public let name: String
+    public let executableURL: URL?
 
-    public init(dbid: Int64, name: String) {
+
+    public init(dbid: Int64, name: String, executableURL: URL? = nil) {
         self.dbid = dbid
         self.name = name
+        self.executableURL = executableURL
     }
 }
 
@@ -61,6 +64,8 @@ public struct Benchmark {
 
 public final class BenchmarksDB {
 
+    static public let defaultFilename = "benchmarks.sqlite3"
+
     private let connection: Connection
 
     let toolChains = Table("toolchains")
@@ -84,8 +89,8 @@ public final class BenchmarksDB {
     let entryResult = Expression<String>("entr_result")
 
 
-    public init() throws {
-        connection = try Connection("benchmarks.sqlite3")
+    public init(file: String) throws {
+        connection = try Connection(file)
     }
 
 
@@ -190,6 +195,28 @@ INSERT INTO entries (entr_tlch_id, entr_bnch_id, entr_result)
             if let value = Int64(row[entryResult]) { return Decimal(value) }
         }
         return nil
+    }
+
+
+    public func toolChain(name: String) throws -> ToolChain? {
+        for row in try connection.prepare(toolChains.filter(toolChainName == name)) {
+            return ToolChain(dbid: row[toolChainId], name: row[toolChainName])
+        }
+        return nil
+    }
+
+
+    public func renameToolChain(id: Int64, to newName: String) throws {
+        let stmt = try connection.prepare("UPDATE toolchains SET tlch_name = ? WHERE tlch_id = ?")
+        try stmt.run(newName, id)
+    }
+
+
+    public func deleteToolChain(id: Int64) throws {
+        let stmt = try connection.prepare("DELETE FROM entries WHERE entr_tlch_id = ?")
+        try stmt.run(id)
+        let stmt2 = try connection.prepare("DELETE FROM toolchains WHERE tlch_id = ?")
+        try stmt2.run(id)
     }
 
 

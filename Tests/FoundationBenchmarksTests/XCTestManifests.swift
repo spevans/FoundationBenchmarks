@@ -35,13 +35,16 @@ final class StatsLogger {
     private var benchmarkUnits: String = ""
 
     init() {
-        guard let dbId = Int64(ProcessInfo.processInfo.environment["BENCHMARKS_DBID"] ?? "") else {
-            print("No DBID found - not logging to DB")
+        guard let dbId = Int64(ProcessInfo.processInfo.environment["BENCHMARKS_DBID"] ?? ""),
+              let dbfile = ProcessInfo.processInfo.environment["BENCHMARKS_DBFILE"]
+        else {
+            print("No BENCHMARKS_DBID and BENCHMARKS_DBFILE not found in environment - not logging to DB")
             self.db = nil
             self.toolChainId = nil
             return
         }
-        let db = try! BenchmarksDB()
+
+        let db = try! BenchmarksDB(file: dbfile)
         guard try! db.validateToolChainId(dbId) else {
             fatalError("Cant find ToolChainId: \(dbId) in database")
         }

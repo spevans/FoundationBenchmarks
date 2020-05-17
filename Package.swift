@@ -34,7 +34,8 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/fabianfett/swift-base64-kit", .branch("master")),
-        .package(url: "https://github.com/stephencelis/SQLite.swift", from: "0.12.0")
+        .package(url: "https://github.com/stephencelis/SQLite.swift", from: "0.12.0"),
+        .package(url: "https://github.com/apple/swift-argument-parser", from: "0.0.1"),
     ],
     targets: [
         // Targets are the basic building blocks of a package. A target can define a module or a test suite.
@@ -48,6 +49,7 @@ let package = Package(
             name: "FoundationBenchmarks",
             dependencies: [
                 "FoundationBenchmarksDB",
+                .product(name: "ArgumentParser", package: "swift-argument-parser"),
             ]),
         .testTarget(
             name: "FoundationBenchmarksTests",

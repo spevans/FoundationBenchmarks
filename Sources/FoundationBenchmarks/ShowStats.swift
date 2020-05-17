@@ -24,15 +24,12 @@ import Foundation
 
 
 // Render the stats in a markdown compatible table that renders nicely on Github.
-func showStatsIn(database: String) throws {
-    let db = try BenchmarksDB()
-
+func showStatsIn(database db: BenchmarksDB, toolChains: [ToolChain]) throws {
     let diffColumnHeading = "difference"
     let percentageHeading = " pct "
     let firstToLast = "First to Last"
     // Get the list of toolchains
 
-    let toolChains = try db.listToolChains()
     let sections = try db.listSections()
 
     // Find longed section name for padding
