@@ -126,7 +126,7 @@ final class Base64Tests: XCTestCase {
         let twoByteNSData = NSData(data: twoByteData)
         let threeByteNSData = NSData(data: threeByteData)
 
-        testWithOptions(name: "Foundation-nsdata-toString") { options in
+        testWithOptions(name: "NSData.base64EncodedString") { options in
             for _ in 1...runs {
                 _ = nsdata1.base64EncodedString(options: options)
                 _ = nsdata2.base64EncodedString(options: options)
@@ -134,7 +134,7 @@ final class Base64Tests: XCTestCase {
             }
         }
 
-        testWithOptions(name: "Foundation-nsdata-toData") { options in
+        testWithOptions(name: "NSData.base64EncodedData") { options in
             for _ in 1...runs {
                 _ = nsdata1.base64EncodedData(options: options)
                 _ = nsdata2.base64EncodedData(options: options)
@@ -142,7 +142,7 @@ final class Base64Tests: XCTestCase {
             }
         }
 
-        testWithOptions(name: "Foundation-data-toString") { options in
+        testWithOptions(name: "Data.base64EncodedString") { options in
             for _ in 1...runs {
                 _ = data1.base64EncodedString(options: options)
                 _ = data2.base64EncodedString(options: options)
@@ -150,7 +150,7 @@ final class Base64Tests: XCTestCase {
             }
         }
 
-        testWithOptions(name: "Foundation-data-toData") { options in
+        testWithOptions(name: "Data.base64EncodedData") { options in
             for _ in 1...runs {
                 _ = data1.base64EncodedData(options: options)
                 _ = data2.base64EncodedData(options: options)
@@ -166,31 +166,31 @@ final class Base64Tests: XCTestCase {
             }
         }
 
-        timing(name: "Foundation - 0 bytes") {
+        timing(name: "Data/NSData - 0 bytes to String") {
             for _ in 1...runs {
                 _ = zeroByteData.base64EncodedString()
                 _ = zeroByteNSData.base64EncodedString()
             }
         }
 
-        timing(name: "Foundation - 1 byte") {
+        timing(name: "Data/NSData - 1 byte to String") {
             for _ in 1...runs {
                 _ = oneByteData.base64EncodedString()
-                _ = oneByteData.base64EncodedData()
+                _ = oneByteNSData.base64EncodedString()
             }
         }
 
-        timing(name: "Foundation - 2 bytes") {
+        timing(name: "Data/NSData - 2 bytes to String") {
             for _ in 1...runs {
                 _ = twoByteData.base64EncodedString()
-                _ = twoByteData.base64EncodedData()
+                _ = twoByteNSData.base64EncodedString()
             }
         }
 
-        timing(name: "Foundation - 3 bytes") {
+        timing(name: "Data/NSData - 3 bytes to String") {
             for _ in 1...runs {
                 _ = threeByteData.base64EncodedString()
-                _ = threeByteData.base64EncodedData()
+                _ = threeByteNSData.base64EncodedString()
             }
         }
 
@@ -233,34 +233,32 @@ final class Base64Tests: XCTestCase {
         let nsdata1 = NSData(data: data1)
 
         let nsdata1String = nsdata1.base64EncodedString()
-
         let data1String = data1.base64EncodedString()
-
         let b64kit1String = Base64.encode(bytes: data1)
 
         XCTAssertEqual(nsdata1String, data1String)
         XCTAssertEqual(nsdata1String, b64kit1String)
         XCTAssertEqual(b64kit1String, data1String)
 
-        testWithOptions(name: "Foundation-nsdata-toString") { options in
+        testWithOptions(name: "NSData.base64EncodedString") { options in
             for _ in 1...runs {
                 _ = nsdata1.base64EncodedString(options: options)
             }
         }
 
-        testWithOptions(name: "Foundation-nsdata-toData") { options in
+        testWithOptions(name: "NSData.base64EncodedData") { options in
             for _ in 1...runs {
                 _ = nsdata1.base64EncodedData(options: options)
             }
         }
 
-        testWithOptions(name: "Foundation-data-toString") { options in
+        testWithOptions(name: "Data.base64EncodedString") { options in
             for _ in 1...runs {
                 _ = data1.base64EncodedString(options: options)
             }
         }
 
-        testWithOptions(name: "Foundation-data-toData") { options in
+        testWithOptions(name: "Data.base64EncodedData") { options in
             for _ in 1...runs {
                 _ = data1.base64EncodedData(options: options)
             }
@@ -293,7 +291,8 @@ final class Base64Tests: XCTestCase {
         let encodedData3 = data3.base64EncodedData()
         let encodedString3 = data3.base64EncodedString()
 
-        timing(name: "nsdata-decodeString") {
+        // NSData methods
+        timing(name: "NSData-decodeString") {
             for _ in 1...runs {
                 _ = NSData(base64Encoded: encodedString1)
                 _ = NSData(base64Encoded: encodedString2)
@@ -301,7 +300,7 @@ final class Base64Tests: XCTestCase {
             }
         }
 
-        timing(name: "nsdata-decodeString - Ignore Unknown") {
+        timing(name: "NSData-decodeString - Ignore Unknown") {
             for _ in 1...runs {
                 _ = NSData(base64Encoded: encodedString1, options: .ignoreUnknownCharacters)
                 _ = NSData(base64Encoded: encodedString2, options: .ignoreUnknownCharacters)
@@ -309,7 +308,7 @@ final class Base64Tests: XCTestCase {
             }
         }
 
-        timing(name: "nsdata-decodeData") {
+        timing(name: "NSData-decodeData") {
             for _ in 1...runs {
                 _ = NSData(base64Encoded: encodedData1)
                 _ = NSData(base64Encoded: encodedData2)
@@ -317,11 +316,45 @@ final class Base64Tests: XCTestCase {
             }
         }
 
-        timing(name: "nsdata-decodeData - Ignore Unknown") {
+        timing(name: "NSData-decodeData - Ignore Unknown") {
             for _ in 1...runs {
                 _ = NSData(base64Encoded: encodedData1, options: .ignoreUnknownCharacters)
                 _ = NSData(base64Encoded: encodedData2, options: .ignoreUnknownCharacters)
                 _ = NSData(base64Encoded: encodedData3, options: .ignoreUnknownCharacters)
+            }
+        }
+
+
+        // Data methods
+        timing(name: "Data-decodeString") {
+            for _ in 1...runs {
+                _ = Data(base64Encoded: encodedString1)!
+                _ = Data(base64Encoded: encodedString2)!
+                _ = Data(base64Encoded: encodedString3)!
+            }
+        }
+
+        timing(name: "Data-decodeString - Ignore Unknown") {
+            for _ in 1...runs {
+                _ = Data(base64Encoded: encodedString1, options: .ignoreUnknownCharacters)!
+                _ = Data(base64Encoded: encodedString2, options: .ignoreUnknownCharacters)!
+                _ = Data(base64Encoded: encodedString3, options: .ignoreUnknownCharacters)!
+            }
+        }
+
+        timing(name: "Data-decodeData") {
+            for _ in 1...runs {
+                _ = Data(base64Encoded: encodedData1)
+                _ = Data(base64Encoded: encodedData2)
+                _ = Data(base64Encoded: encodedData3)
+            }
+        }
+
+        timing(name: "Data-decodeData - Ignore Unknown") {
+            for _ in 1...runs {
+                _ = Data(base64Encoded: encodedData1, options: .ignoreUnknownCharacters)
+                _ = Data(base64Encoded: encodedData2, options: .ignoreUnknownCharacters)
+                _ = Data(base64Encoded: encodedData3, options: .ignoreUnknownCharacters)
             }
         }
 
@@ -343,27 +376,53 @@ final class Base64Tests: XCTestCase {
         let encodedData1 = data1.base64EncodedData()
         let encodedString1 = data1.base64EncodedString()
 
-        timing(name: "nsdata-decodeString") {
+        // NSData methods
+        timing(name: "NSData-decodeString") {
             for _ in 1...runs {
                 _ = NSData(base64Encoded: encodedString1)
             }
         }
 
-        timing(name: "nsdata-decodeString - Ignore Unknown") {
+        timing(name: "NSData-decodeString - Ignore Unknown") {
             for _ in 1...runs {
                 _ = NSData(base64Encoded: encodedString1, options: .ignoreUnknownCharacters)
             }
         }
 
-        timing(name: "nsdata-decodeData") {
+        timing(name: "NSData-decodeData") {
             for _ in 1...runs {
                 _ = NSData(base64Encoded: encodedData1)
             }
         }
 
-        timing(name: "nsdata-decodeData - Ignore Unknown") {
+        timing(name: "NSData-decodeData - Ignore Unknown") {
             for _ in 1...runs {
                 _ = NSData(base64Encoded: encodedData1, options: .ignoreUnknownCharacters)
+            }
+        }
+
+        // Data methods
+        timing(name: "Data-decodeString") {
+            for _ in 1...runs {
+                _ = Data(base64Encoded: encodedString1)!
+            }
+        }
+
+        timing(name: "Data-decodeString - Ignore Unknown") {
+            for _ in 1...runs {
+                _ = Data(base64Encoded: encodedString1, options: .ignoreUnknownCharacters)!
+            }
+        }
+
+        timing(name: "Data-decodeData") {
+            for _ in 1...runs {
+                _ = Data(base64Encoded: encodedData1)!
+            }
+        }
+
+        timing(name: "Data-decodeData - Ignore Unknown") {
+            for _ in 1...runs {
+                _ = Data(base64Encoded: encodedData1, options: .ignoreUnknownCharacters)!
             }
         }
 
