@@ -103,7 +103,7 @@ extension BenchmarkCommand {
                     let baseURL = URL(fileURLWithPath: arg)
                     let execURL = baseURL.appendingPathComponent("usr/bin/swift")
                     guard fm.isExecutableFile(atPath: execURL.path) else {
-                        fatalError("Invalid toolchain \(arg): cant find exectable \(execURL.path)")
+                        throw RuntimeError(description: "Invalid toolchain \(arg): cant find exectable \(execURL.path)")
                     }
                     executableURL = execURL
                     baseName = baseURL.lastPathComponent
