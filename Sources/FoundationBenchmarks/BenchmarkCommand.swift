@@ -31,7 +31,7 @@ struct RuntimeError: Error, CustomStringConvertible {
 
 struct BenchmarkCommand: ParsableCommand {
     static var configuration = CommandConfiguration(
-        abstract: "A utility for benchmarking swift-corelibs-foundation in different Swift toolchains.",
+        abstract: "A utility for benchmarking swift-corelibs-foundation using multiple Swift toolchains.",
         subcommands: [Benchmark.self, Show.self, List.self, Rename.self, Delete.self],
         defaultSubcommand: Benchmark.self
     )
@@ -47,6 +47,9 @@ struct Options: ParsableArguments {
 
     @Option(help: "Suffixes to remove from all toolchain names.")
     var removeSuffixes: String?
+
+    @Flag(help: "Use HTML for output")
+    var html: Bool
 
     @Argument(help: "Toolchains.")
     var toolchains: [String]
@@ -143,7 +146,11 @@ extension BenchmarkCommand {
                     throw RuntimeError(description: "Failed to run test for tool chain '\(toolChain.name)'")
                 }
             }
-            try showStatsIn(database: db, toolChains: toolChains)
+            if options.html {
+                try showHTMLStatsIn(database: db, toolChains: toolChains)
+            } else {
+                try showStatsIn(database: db, toolChains: toolChains)
+            }
         }
     }
 }
@@ -171,7 +178,11 @@ extension BenchmarkCommand {
                     toolChains.append(toolChain)
                 }
             }
-            try showStatsIn(database: db, toolChains: toolChains)
+            if options.html {
+                try showHTMLStatsIn(database: db, toolChains: toolChains)
+            } else {
+                try showStatsIn(database: db, toolChains: toolChains)
+            }
         }
     }
 }

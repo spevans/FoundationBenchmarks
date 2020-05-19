@@ -23,16 +23,17 @@ import FoundationBenchmarksDB
 import Foundation
 
 
+private let diffColumnHeading = "difference"
+private let percentageHeading = " pct "
+private let firstToLast = "First to Last"
+
 // Render the stats in a markdown compatible table that renders nicely on Github.
 func showStatsIn(database db: BenchmarksDB, toolChains: [ToolChain]) throws {
-    let diffColumnHeading = "difference"
-    let percentageHeading = " pct "
-    let firstToLast = "First to Last"
     // Get the list of toolchains
 
     let sections = try db.listSections()
 
-    // Find longed section name for padding
+    // Find longest section name for padding.
     var maxLength = 0
     for section in sections {
         maxLength = max(maxLength, section.name.count)
@@ -126,6 +127,114 @@ func showStatsIn(database db: BenchmarksDB, toolChains: [ToolChain]) throws {
 
         print("")
     }
+}
+
+
+
+// Render the stats in an HTML table.
+func showHTMLStatsIn(database db: BenchmarksDB, toolChains: [ToolChain]) throws {
+
+    // Get the list of toolchains
+    let sections = try db.listSections()
+
+    print("""
+<html>
+    <head>
+    </head>
+    <style>
+        body {
+           font-family: -apple-system, verdana, helvetia, arial, sans-serif;
+        }
+        table {
+        border-collapse: collapse;
+        }
+        tbody th.even, td.even {
+           background-color: #e0e0e0;
+        }
+        tbody th.odd, td.odd {
+           background-color: #ffffff;
+        }
+
+        td, th {
+            border: 1pt solid black;
+            padding: 5pt;
+        }
+        td.spacer {
+            padding: 30pt;
+            border-bottom: 0pt;
+            border-left: 0pt;
+            border-right: 0pt;
+            background-color: #ffffff;
+        }
+    </style>
+
+    <body>
+    <table>
+""")
+    for (sectionIdx, section) in sections.enumerated() {
+        // Header with Toolchain name and 'difference' / 'pct' columns
+
+        print("\t<!-- Start of \(section.name) -->")
+        print("\t<tr><th align=\"left\">\(section.name)</th>", terminator: "")
+        var oddRow = false
+        for (idx, toolChain) in toolChains.enumerated() {
+            oddRow.toggle()
+            let rowClass = oddRow ? "odd" : "even"
+            print("<th class=\"\(rowClass)\">\(toolChain.name)</th>", terminator: "")
+            if idx != 0 {
+                print("<th class=\"\(rowClass)\" colspan=\"2\">\(diffColumnHeading)</th>", terminator: "")
+            }
+
+        }
+        if toolChains.count > 2 {
+            print("<th colspan=\"2\">\(firstToLast)</th>", terminator: "")
+        }
+        print("</tr>")
+
+        for benchmark in section.benchmarks {
+            print("\t<tr><td align=\"left\">\(benchmark.name)</td>", terminator: "")
+
+            var firstValue: Decimal? = nil
+            var previousValue: Decimal? = nil
+            var oddRow = false
+            for toolChain in toolChains {
+                oddRow.toggle()
+                let rowClass = oddRow ? "odd" : "even"
+
+                if let value = try db.benchmarkEntry(toolChainId: toolChain.dbid, benchmarkId: benchmark.dbid) {
+                    // print the value
+                    print("<td align=\"right\" class=\"\(rowClass)\">\(value) \(benchmark.units)</td>", terminator: "")
+
+                    if let previous = previousValue {
+                        let (diff, pct)  = calculateDiff(previous: previous, current: value, units: benchmark.units)
+                        print("<td align=\"right\" class=\"\(rowClass)\">\(diff)</td>", terminator: "")
+                        print("<td align=\"right\" class=\"\(rowClass)\">\(pct)</td>", terminator: "")
+                    }
+                    firstValue = firstValue ?? value
+                    previousValue = value
+                } else {
+                    print("<td class=\"\(rowClass)\" colspan=\"3\"></td>", terminator: "")
+                }
+            }
+
+            if toolChains.count > 2 {
+                oddRow.toggle()
+                let rowClass = oddRow ? "odd" : "even"
+                if let first = firstValue, let last = previousValue {
+                    let (diff, pct)  = calculateDiff(previous: first, current: last, units: benchmark.units)
+                    print("<td align=\"right\" class=\"\(rowClass)\">\(diff)</td><td align=\"right\" class=\"\(rowClass)\">\(pct)</td>", terminator: "")
+                } else {
+                    print("<td class=\"\(rowClass)\" colspan=\"2\"></td>", terminator: "")
+                }
+            }
+            print("</tr>")
+        }
+        print("\t<!-- End of \(section.name) -->\n")
+        if sectionIdx < sections.count - 1 {
+            print("\t<tr><td class=\"spacer\" colspan=\"100%\"></td></tr>\n")
+        }
+    }
+    print("    </table>\n    </body>\n</html>")
 }
 
 
