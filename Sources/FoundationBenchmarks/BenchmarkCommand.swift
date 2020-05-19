@@ -132,12 +132,12 @@ extension BenchmarkCommand {
                 process.environment = env
 
                 print("Running with toolChain: \(toolChain.name)")
-                if toolChain.name == "default" {
+                if let executableURL = toolChain.executableURL {
+                    process.executableURL = executableURL
+                    process.arguments = ["test", "-c", "release" ]
+                } else {
                     process.executableURL = URL(fileURLWithPath: "/bin/sh")
                     process.arguments = ["-c", "swift test -c release" ]
-                } else {
-                    process.executableURL = toolChain.executableURL
-                    process.arguments = ["test", "-c", "release" ]
                 }
                 try! process.run()
                 process.waitUntilExit()
