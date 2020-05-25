@@ -45,7 +45,9 @@ final class Base64Tests: XCTestCase {
 
     private func timing(name: String, execute: () -> ()) {
         let start = Date()
-        execute()
+        autoreleasepool {
+            execute()
+        }
         let time = Decimal(Int(-start.timeIntervalSinceNow * 1000))
         try! statsLogger.benchmark(name: name, units: "ms")
         try! statsLogger.addEntry(result: time)

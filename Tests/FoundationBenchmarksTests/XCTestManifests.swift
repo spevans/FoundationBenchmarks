@@ -24,6 +24,14 @@ import FoundationBenchmarksDB
 import Foundation
 
 
+#if !_runtime(_ObjC)
+func autoreleasepool(invoking code: () -> Void) {
+  // autoreleasepool only exists on Darwin so add a dummy for Linux.
+  code()
+}
+#endif
+
+
 final class StatsLogger {
 
     private let db: BenchmarksDB?
