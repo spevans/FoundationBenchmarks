@@ -146,10 +146,12 @@ extension BenchmarkCommand {
                     throw RuntimeError(description: "Failed to run test for tool chain '\(toolChain.name)'")
                 }
             }
+            let benchmarks = try db.listBenchmarks()
+            let results = try db.resultsFor(toolChains: toolChains, with: benchmarks)
             if options.html {
-                try showHTMLStatsIn(database: db, toolChains: toolChains)
+                showHTMLStatsWith(results: results, forBenchmarks: benchmarks)
             } else {
-                try showStatsIn(database: db, toolChains: toolChains)
+                showStatsWith(results: results, forBenchmarks: benchmarks)
             }
         }
     }
@@ -178,10 +180,12 @@ extension BenchmarkCommand {
                     toolChains.append(toolChain)
                 }
             }
+            let benchmarks = try db.listBenchmarks()
+            let results = try db.resultsFor(toolChains: toolChains, with: benchmarks)
             if options.html {
-                try showHTMLStatsIn(database: db, toolChains: toolChains)
+                showHTMLStatsWith(results: results, forBenchmarks: benchmarks)
             } else {
-                try showStatsIn(database: db, toolChains: toolChains)
+                showStatsWith(results: results, forBenchmarks: benchmarks)
             }
         }
     }

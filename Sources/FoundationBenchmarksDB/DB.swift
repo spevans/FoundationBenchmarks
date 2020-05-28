@@ -53,11 +53,60 @@ public struct Benchmark {
     public let dbid: Int64
     public let name: String
     public let units: String
+    public let sectionName: String?
 
-    public init(dbid: Int64, name: String, units: String) {
+    public init(dbid: Int64, name: String, units: String, sectionName: String? = nil) {
         self.dbid = dbid
         self.name = name
         self.units = units
+        self.sectionName = sectionName
+    }
+}
+
+
+public struct ToolChainResults {
+    public let toolChain: ToolChain
+    public let results: [Int64: String]
+    public let maxResultWidth: Int
+    public let pctResults: [Int64: Int]?
+    public let maxPctResultWidth: Int
+
+
+    public init(toolChain: ToolChain, benchmarks: [Benchmark], results: [Int64: String],
+                pctResults: [Int64: Int]? = nil) {
+        self.toolChain = toolChain
+        self.results = results
+        self.pctResults = pctResults
+
+        var maxWidth = toolChain.name.count
+        for benchmark in benchmarks {
+            if let value = results[benchmark.dbid] {
+                let width = value.count + 1 + benchmark.units.count
+                maxWidth = max(maxWidth, width)
+            }
+        }
+        maxResultWidth = maxWidth
+
+        var maxPctWidth = 0
+        if let pctResults = pctResults {
+            for benchmark in benchmarks {
+                if let value = pctResults[benchmark.dbid] {
+                    let width = value.description.count + 1 + (value > 0 ? 1 : 0)
+                    maxPctWidth = max(maxPctWidth, width)
+                }
+            }
+        }
+        maxPctResultWidth = maxPctWidth
+    }
+
+    public var isDifferenceResults: Bool { pctResults != nil }
+
+    public func pctResultFor(id: Int64) -> String {
+        if let results = pctResults, let value = results[id] {
+            return (value > 1 ? "+" : "") + "\(value)%"
+        } else {
+            return ""
+        }
     }
 }
 
@@ -191,10 +240,93 @@ INSERT INTO entries (entr_tlch_id, entr_bnch_id, entr_result)
     public func benchmarkEntry(toolChainId: Int64, benchmarkId: Int64) throws -> Decimal? {
         let benchmarkEntryQuery = try connection.prepare(entries.filter(entryToolChainId == toolChainId)
             .filter(entryBenchmarkId == benchmarkId))
-        for row in benchmarkEntryQuery  {
+        for row in benchmarkEntryQuery {
             if let value = Int64(row[entryResult]) { return Decimal(value) }
         }
         return nil
+    }
+
+
+    public func listBenchmarks() throws -> [Benchmark] {
+        let stmt = try connection.prepare(
+"""
+  SELECT bnch_id, sect_name, bnch_name, bnch_units
+    FROM benchmarks
+    JOIN sections ON sect_id = bnch_sect_id
+ORDER BY sect_id, bnch_id
+""")
+        try stmt.run()
+
+        var benchmarks: [Benchmark] = []
+        for row in stmt {
+            var dbId: Int64?
+            var section: String?
+            var name: String?
+            var units: String?
+
+            for (index, columnName) in stmt.columnNames.enumerated() {
+                let value = row[index]
+                switch columnName {
+                case "bnch_id" where value is Int64: dbId = value as? Int64
+                case "sect_name" where value is String: section = value as? String
+                case "bnch_name" where value is String: name = value as? String
+                case "bnch_units" where value is String: units = value as? String
+                default: fatalError("Invalid row/value: \(columnName), \(String(describing: value))")
+                }
+            }
+            if let section = section, let dbId = dbId, let name = name, let units = units {
+                benchmarks.append(Benchmark(dbid: dbId, name: name, units: units, sectionName: section))
+            } else {
+                fatalError("Bad DB result from select")
+            }
+        }
+        return benchmarks
+    }
+
+
+    public func fullResultsFor(toolChain: ToolChain, with benchmarks: [Benchmark]) throws -> ToolChainResults {
+
+        let benchmarkIds: Set<Int64> = Set(benchmarks.map { $0.dbid })
+        let stmt = try connection.prepare(
+"""
+   SELECT bnch_id, entr_result
+    FROM sections
+    JOIN benchmarks ON bnch_sect_id = sect_id
+    LEFT OUTER JOIN entries ON entr_bnch_id = bnch_id AND entr_tlch_id = ?
+ORDER BY sect_id, bnch_id;
+""")
+        try stmt.run(toolChain.dbid)
+
+        var results: [Int64: String] = [:]
+        for row in stmt {
+            var benchmarkId: Int64?
+            var entry: String?
+
+            for (index, columnName) in stmt.columnNames.enumerated() {
+                let value = row[index]
+                switch columnName {
+                case "bnch_id" where value is Int64: benchmarkId = value as? Int64
+                case "entr_result": entry = value as? String
+                default: fatalError("Invalid row/value: \(columnName), \(String(describing: value))")
+                }
+            }
+
+            if let benchmarkId = benchmarkId, benchmarkIds.contains(benchmarkId) {
+                if let entry = entry {
+                    results[benchmarkId] = entry
+                }
+            } else {
+                fatalError("Bad DB result from select")
+            }
+        }
+        return ToolChainResults(toolChain: toolChain, benchmarks: benchmarks, results: results)
+    }
+
+
+    public func resultsFor(toolChains: [ToolChain], with benchmarks: [Benchmark]) throws -> [ToolChainResults] {
+        try toolChains.map {
+            try fullResultsFor(toolChain: $0, with: benchmarks)
+        }
     }
 
 
