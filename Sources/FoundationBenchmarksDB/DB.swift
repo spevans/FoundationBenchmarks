@@ -101,8 +101,8 @@ public struct ToolChainResults {
 
     public var isDifferenceResults: Bool { pctResults != nil }
 
-    public func pctResultFor(id: Int64) -> String {
-        if let results = pctResults, let value = results[id] {
+    public func pctResultFor(benchmarkId: Int64) -> String {
+        if let results = pctResults, let value = results[benchmarkId] {
             return (value > 1 ? "+" : "") + "\(value)%"
         } else {
             return ""
@@ -145,36 +145,36 @@ public final class BenchmarksDB {
 
     public func createTables() throws {
 
-        _ = try connection.run (toolChains.create(ifNotExists: true) { t in
-                t.column(toolChainId, primaryKey: true)
-                t.column(toolChainName, unique: true)
+        _ = try connection.run(toolChains.create(ifNotExists: true) { table in
+                table.column(toolChainId, primaryKey: true)
+                table.column(toolChainName, unique: true)
             })
 
-        _ = try connection.run (sections.create(ifNotExists: true) { t in
-                t.column(sectionId, primaryKey: true)
-                t.column(sectionName, unique: true)
+        _ = try connection.run(sections.create(ifNotExists: true) { table in
+                table.column(sectionId, primaryKey: true)
+                table.column(sectionName, unique: true)
             })
 
-        _ = try connection.run (benchmarks.create(ifNotExists: true) { t in
-                t.column(benchmarkId, primaryKey: true)
-                t.column(benchmarkSectionId, references: sections, sectionId)
-                t.column(benchmarkName)
-                t.column(benchmarkUnits)
-                t.unique(benchmarkSectionId, benchmarkName)
+        _ = try connection.run(benchmarks.create(ifNotExists: true) { table in
+                table.column(benchmarkId, primaryKey: true)
+                table.column(benchmarkSectionId, references: sections, sectionId)
+                table.column(benchmarkName)
+                table.column(benchmarkUnits)
+                table.unique(benchmarkSectionId, benchmarkName)
             })
 
-        _ = try connection.run (entries.create(ifNotExists: true) { t in
-                t.column(entryId, primaryKey: true)
-                t.column(entryToolChainId, references: toolChains, toolChainId)
-                t.column(entryBenchmarkId, references: benchmarks, benchmarkId)
-                t.column(entryResult)
+        _ = try connection.run(entries.create(ifNotExists: true) { table in
+                table.column(entryId, primaryKey: true)
+                table.column(entryToolChainId, references: toolChains, toolChainId)
+                table.column(entryBenchmarkId, references: benchmarks, benchmarkId)
+                table.column(entryResult)
             })
     }
 
 
-    public func validateToolChainId(_ id: Int64) throws -> Bool {
-        if let row = try connection.pluck(toolChains.filter(toolChainId == id)) {
-            return row[toolChainId] == id
+    public func validateToolChainId(_ dbId: Int64) throws -> Bool {
+        if let row = try connection.pluck(toolChains.filter(toolChainId == dbId)) {
+            return row[toolChainId] == dbId
         }
         return false
     }
@@ -330,7 +330,7 @@ ORDER BY sect_id, bnch_id;
     }
 
 
-    public func toolChain(name: String) throws -> ToolChain? {
+    public func toolChain(byName name: String) throws -> ToolChain? {
         for row in try connection.prepare(toolChains.filter(toolChainName == name)) {
             return ToolChain(dbid: row[toolChainId], name: row[toolChainName])
         }
@@ -338,17 +338,17 @@ ORDER BY sect_id, bnch_id;
     }
 
 
-    public func renameToolChain(id: Int64, to newName: String) throws {
+    public func renameToolChain(_ toolChain: ToolChain, to newName: String) throws {
         let stmt = try connection.prepare("UPDATE toolchains SET tlch_name = ? WHERE tlch_id = ?")
-        try stmt.run(newName, id)
+        try stmt.run(newName, toolChain.dbid)
     }
 
 
-    public func deleteToolChain(id: Int64) throws {
+    public func deleteToolChain(_ toolChain: ToolChain) throws {
         let stmt = try connection.prepare("DELETE FROM entries WHERE entr_tlch_id = ?")
-        try stmt.run(id)
+        try stmt.run(toolChain.dbid)
         let stmt2 = try connection.prepare("DELETE FROM toolchains WHERE tlch_id = ?")
-        try stmt2.run(id)
+        try stmt2.run(toolChain.dbid)
     }
 
 
@@ -369,7 +369,8 @@ ORDER BY sect_id, bnch_id;
             var results2: [Benchmark] = []
             for row2 in try connection.prepare(benchmarks.filter(benchmarkSectionId == row[sectionId])
                 .order(benchmarkId)) {
-                results2.append(Benchmark(dbid: row2[benchmarkId], name: row2[benchmarkName], units: row2[benchmarkUnits]))
+                results2.append(Benchmark(dbid: row2[benchmarkId], name: row2[benchmarkName],
+                                          units: row2[benchmarkUnits]))
                 }
             results.append(Section(dbid: row[sectionId], name: row[sectionName], benchmarks: results2))
         }

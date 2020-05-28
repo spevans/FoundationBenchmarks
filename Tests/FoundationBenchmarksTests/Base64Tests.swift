@@ -43,28 +43,44 @@ final class Base64Tests: XCTestCase {
     }
 
 
-    private func timing(name: String, execute: () -> ()) {
+    private func timing(name: String, execute: () throws -> Void) rethrows {
         let start = Date()
-        autoreleasepool {
-            execute()
+        try autoreleasepool {
+            try execute()
         }
         let time = Decimal(Int(-start.timeIntervalSinceNow * 1000))
-        try! statsLogger.benchmark(name: name, units: "ms")
-        try! statsLogger.addEntry(result: time)
+        do {
+            try statsLogger.benchmark(name: name, units: "ms")
+            try statsLogger.addEntry(result: time)
+        } catch {
+            fatalError("Cant write results to DB: \(error)")
+        }
     }
 
     private let optionsLength64: NSData.Base64EncodingOptions = [.lineLength64Characters]
-    private let optionsLength64withCR: NSData.Base64EncodingOptions = [.lineLength64Characters, .endLineWithCarriageReturn]
-    private let optionsLength64withLF: NSData.Base64EncodingOptions = [.lineLength64Characters, .endLineWithLineFeed]
-    private let optionsLength64withCRLF: NSData.Base64EncodingOptions = [.lineLength64Characters, .endLineWithCarriageReturn, .endLineWithLineFeed, ]
+    private let optionsLength64withCR: NSData.Base64EncodingOptions = [.lineLength64Characters,
+        .endLineWithCarriageReturn
+    ]
+    private let optionsLength64withLF: NSData.Base64EncodingOptions = [.lineLength64Characters,
+        .endLineWithLineFeed
+    ]
+    private let optionsLength64withCRLF: NSData.Base64EncodingOptions = [.lineLength64Characters,
+        .endLineWithCarriageReturn, .endLineWithLineFeed
+    ]
 
     private let optionsLength76: NSData.Base64EncodingOptions = [.lineLength76Characters]
-    private let optionsLength76withCR: NSData.Base64EncodingOptions = [.lineLength76Characters, .endLineWithCarriageReturn]
-    private let optionsLength76withLF: NSData.Base64EncodingOptions = [.lineLength76Characters, .endLineWithLineFeed]
-    private let optionsLength76withCRLF: NSData.Base64EncodingOptions = [.lineLength76Characters, .endLineWithCarriageReturn, .endLineWithLineFeed, ]
+    private let optionsLength76withCR: NSData.Base64EncodingOptions = [.lineLength76Characters,
+        .endLineWithCarriageReturn
+    ]
+    private let optionsLength76withLF: NSData.Base64EncodingOptions = [.lineLength76Characters,
+        .endLineWithLineFeed
+    ]
+    private let optionsLength76withCRLF: NSData.Base64EncodingOptions = [.lineLength76Characters,
+        .endLineWithCarriageReturn, .endLineWithLineFeed
+    ]
 
 
-    private func testWithOptions(name: String, execute: (_ : NSData.Base64EncodingOptions) -> ()) {
+    private func testWithOptions(name: String, execute: (_ : NSData.Base64EncodingOptions) -> Void) {
         timing(name: "\(name) - No options", execute: { execute([]) })
         timing(name: "\(name) - Length64", execute: { execute([optionsLength64]) })
         timing(name: "\(name) - Length64CR", execute: { execute([optionsLength64withCR]) })
@@ -326,7 +342,6 @@ final class Base64Tests: XCTestCase {
             }
         }
 
-
         // Data methods
         timing(name: "Data-decodeString") {
             for _ in 1...runs {
@@ -360,11 +375,11 @@ final class Base64Tests: XCTestCase {
             }
         }
 
-        timing(name: "Base64kit") {
+        try timing(name: "Base64kit") {
             for _ in 1...runs {
-	        _ = try! encodedString1.base64decoded()
-	        _ = try! encodedString2.base64decoded()
-	        _ = try! encodedString3.base64decoded()
+	        _ = try encodedString1.base64decoded()
+	        _ = try encodedString2.base64decoded()
+	        _ = try encodedString3.base64decoded()
 	    }
         }
     }
@@ -428,9 +443,9 @@ final class Base64Tests: XCTestCase {
             }
         }
 
-        timing(name: "Base64kit") {
+        try timing(name: "Base64kit") {
             for _ in 1...runs {
-	        _ = try! encodedString1.base64decoded()
+	        _ = try encodedString1.base64decoded()
 	    }
         }
     }

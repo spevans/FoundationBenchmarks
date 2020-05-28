@@ -134,7 +134,7 @@ func showStatsWith(results: [ToolChainResults], forBenchmarks benchmarks: [Bench
 
             if toolChainResult.isDifferenceResults {
                 let maxWidth = max(toolChainResult.maxPctResultWidth, percentageHeading.count)
-                let entry = toolChainResult.pctResultFor(id: benchmark.dbid)
+                let entry = toolChainResult.pctResultFor(benchmarkId: benchmark.dbid)
                 print(" \(String(repeating: " ", count: maxWidth - entry.count))\(entry) |", terminator: "")
             }
         }
@@ -226,7 +226,7 @@ func showHTMLStatsWith(results: [ToolChainResults], forBenchmarks benchmarks: [B
                 print("<td class=\"\(rowClass)\"></td>", terminator: "")
             }
             if toolChainResult.isDifferenceResults {
-                let entry = toolChainResult.pctResultFor(id: benchmark.dbid)
+                let entry = toolChainResult.pctResultFor(benchmarkId: benchmark.dbid)
                 print("<td align=\"right\" class=\"\(rowClass)\">\(entry)</td>", terminator: "")
             }
         }

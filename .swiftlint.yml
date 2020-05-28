@@ -1,0 +1,5 @@
+vertical_whitespace:
+  max_empty_lines: 2
+
+disabled_rules:
+  trailing_comma

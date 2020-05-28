@@ -56,7 +56,6 @@ struct Options: ParsableArguments {
 }
 
 
-
 extension BenchmarkCommand {
     struct Benchmark: ParsableCommand {
         static var configuration = CommandConfiguration(abstract: "Run the benchmarks and show the results.")
@@ -64,56 +63,52 @@ extension BenchmarkCommand {
         @OptionGroup()
         var options: Options
 
-
         // Find the version of a swift toolchain, using --version, of the default swfit in the path
-        private func findDefaultSwiftVersion() -> String? {
+        private func findDefaultSwiftVersion() throws -> String? {
             let pipe = Pipe()
             let process = Process()
             process.executableURL = URL(fileURLWithPath: "/bin/sh")
             process.arguments = ["-c", "swift --version" ]
             process.standardOutput = pipe.fileHandleForWriting
-            try! process.run()
+            try process.run()
             process.waitUntilExit()
             let input = String(data: pipe.fileHandleForReading.availableData, encoding: .utf8)
             if let parts = input?.split(separator: "\n").first?.split(separator: " ") {
-                for idx in 0..<parts.count - 1 {
-                    if parts[idx] == "version" {
-                        let v = parts[idx + 1]
-                        return String(v)
-                    }
+                for idx in 0..<parts.count - 1 where parts[idx] == "version" {
+                    return String(parts[idx + 1])
                 }
             }
             return nil
         }
 
-        func validateToolChains(db: BenchmarksDB, arguments: [String]) throws -> [ToolChain] {
+        func validateToolChains(benchmarkDb: BenchmarksDB, arguments: [String]) throws -> [ToolChain] {
             var toolChains: [ToolChain] = []
-            let fm = FileManager.default
+            let fileManager = FileManager.default
 
             guard !arguments.isEmpty else {
                 print("No toolchain specified, running using default 'swift' executable in path")
-                let id = try db.addToolChain(name: "default")
-                return [ ToolChain(dbid: id, name: "default") ]
+                let toolChainId = try benchmarkDb.addToolChain(name: "default")
+                return [ ToolChain(dbid: toolChainId, name: "default") ]
             }
 
             for arg in arguments {
                 let executableURL: URL?
                 let baseName: String
                 if arg == "default" {
-                    baseName = "default-" + (findDefaultSwiftVersion() ?? "")
+                    baseName = "default-" + (try findDefaultSwiftVersion() ?? "")
                     executableURL = nil
                 } else {
                     let baseURL = URL(fileURLWithPath: arg)
                     let execURL = baseURL.appendingPathComponent("usr/bin/swift")
-                    guard fm.isExecutableFile(atPath: execURL.path) else {
+                    guard fileManager.isExecutableFile(atPath: execURL.path) else {
                         throw RuntimeError(description: "Invalid toolchain \(arg): cant find exectable \(execURL.path)")
                     }
                     executableURL = execURL
                     baseName = baseURL.lastPathComponent
                 }
                 print("Adding toolchain:", baseName)
-                let id = try db.addToolChain(name: baseName)
-                toolChains.append(ToolChain(dbid: id, name: baseName, executableURL: executableURL))
+                let dbId = try benchmarkDb.addToolChain(name: baseName)
+                toolChains.append(ToolChain(dbid: dbId, name: baseName, executableURL: executableURL))
             }
 
             return toolChains
@@ -121,9 +116,9 @@ extension BenchmarkCommand {
 
 
         func run() throws {
-            let db = try BenchmarksDB(file: options.filename)
-            try db.createTables()
-            let toolChains = try validateToolChains(db: db, arguments: options.toolchains)
+            let benchmarkDb = try BenchmarksDB(file: options.filename)
+            try benchmarkDb.createTables()
+            let toolChains = try validateToolChains(benchmarkDb: benchmarkDb, arguments: options.toolchains)
             for toolChain in toolChains {
                 let process = Process()
                 var env = ProcessInfo.processInfo.environment
@@ -139,15 +134,15 @@ extension BenchmarkCommand {
                     process.executableURL = URL(fileURLWithPath: "/bin/sh")
                     process.arguments = ["-c", "swift test -c release" ]
                 }
-                try! process.run()
+                try process.run()
                 process.waitUntilExit()
 
                 if process.terminationStatus != 0 {
                     throw RuntimeError(description: "Failed to run test for tool chain '\(toolChain.name)'")
                 }
             }
-            let benchmarks = try db.listBenchmarks()
-            let results = try db.resultsFor(toolChains: toolChains, with: benchmarks)
+            let benchmarks = try benchmarkDb.listBenchmarks()
+            let results = try benchmarkDb.resultsFor(toolChains: toolChains, with: benchmarks)
             if options.html {
                 showHTMLStatsWith(results: results, forBenchmarks: benchmarks)
             } else {
@@ -167,21 +162,21 @@ extension BenchmarkCommand {
 
 
         func run() throws {
-            let db = try BenchmarksDB(file: options.filename)
+            let benchmarkDb = try BenchmarksDB(file: options.filename)
             var toolChains: [ToolChain] = []
 
             if options.toolchains.isEmpty {
-                toolChains = try db.listToolChains()
+                toolChains = try benchmarkDb.listToolChains()
             } else {
                 for name in options.toolchains {
-                    guard let toolChain = try db.toolChain(name: name) else {
+                    guard let toolChain = try benchmarkDb.toolChain(byName: name) else {
                         throw RuntimeError(description: "Cant find toolchain '\(name)' in results.")
                     }
                     toolChains.append(toolChain)
                 }
             }
-            let benchmarks = try db.listBenchmarks()
-            let results = try db.resultsFor(toolChains: toolChains, with: benchmarks)
+            let benchmarks = try benchmarkDb.listBenchmarks()
+            let results = try benchmarkDb.resultsFor(toolChains: toolChains, with: benchmarks)
             if options.html {
                 showHTMLStatsWith(results: results, forBenchmarks: benchmarks)
             } else {
@@ -200,8 +195,8 @@ extension BenchmarkCommand {
         var filename: String
 
         func run() throws {
-            let db = try BenchmarksDB(file: filename)
-            let toolChains = try db.listToolChains()
+            let benchmarkDb = try BenchmarksDB(file: filename)
+            let toolChains = try benchmarkDb.listToolChains()
             toolChains.forEach {
                 print("\($0.dbid):\t\($0.name)")
             }
@@ -225,11 +220,11 @@ extension BenchmarkCommand {
 
 
         func run() throws {
-            let db = try BenchmarksDB(file: filename)
-            guard let toolChain = try db.toolChain(name: toolchain) else {
+            let benchmarkDb = try BenchmarksDB(file: filename)
+            guard let toolChain = try benchmarkDb.toolChain(byName: toolchain) else {
                 throw RuntimeError(description: "Cant find toolchain '\(toolchain)' in results.")
             }
-            try db.renameToolChain(id: toolChain.dbid, to: newName)
+            try benchmarkDb.renameToolChain(toolChain, to: newName)
         }
     }
 }
@@ -247,12 +242,12 @@ extension BenchmarkCommand {
 
 
         func run() throws {
-            let db = try BenchmarksDB(file: filename)
+            let benchmarkDb = try BenchmarksDB(file: filename)
             for name in toolchains {
-                guard let toolChain = try db.toolChain(name: name) else {
+                guard let toolChain = try benchmarkDb.toolChain(byName: name) else {
                     throw RuntimeError(description: "Cant find toolchain '\(name)' in results.")
                 }
-                try db.deleteToolChain(id: toolChain.dbid)
+                try benchmarkDb.deleteToolChain(toolChain)
             }
         }
     }

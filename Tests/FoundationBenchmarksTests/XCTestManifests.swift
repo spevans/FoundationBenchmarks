@@ -24,40 +24,45 @@ import FoundationBenchmarksDB
 import Foundation
 
 
+// autoreleasepool only exists on Darwin so add a dummy for Linux.
 #if !_runtime(_ObjC)
-func autoreleasepool(invoking code: () -> Void) {
-  // autoreleasepool only exists on Darwin so add a dummy for Linux.
-  code()
+func autoreleasepool(invoking block: () throws -> Void) rethrows {
+    try block()
 }
 #endif
 
 
 final class StatsLogger {
 
-    private let db: BenchmarksDB?
+    private let benchmarkDb: BenchmarksDB?
     private let toolChainId: Int64?
 
-    private var sectionId: Int64? = nil
-    private var benchmarkId: Int64? = nil
+    private var sectionId: Int64?
+    private var benchmarkId: Int64?
     private var benchmarkName: String = ""
     private var benchmarkUnits: String = ""
+
 
     init() {
         guard let dbId = Int64(ProcessInfo.processInfo.environment["BENCHMARKS_DBID"] ?? ""),
               let dbfile = ProcessInfo.processInfo.environment["BENCHMARKS_DBFILE"]
         else {
             print("No BENCHMARKS_DBID and BENCHMARKS_DBFILE not found in environment - not logging to DB")
-            self.db = nil
+            self.benchmarkDb = nil
             self.toolChainId = nil
             return
         }
 
-        let db = try! BenchmarksDB(file: dbfile)
-        guard try! db.validateToolChainId(dbId) else {
-            fatalError("Cant find ToolChainId: \(dbId) in database")
+        do {
+            let benchmarkDb = try BenchmarksDB(file: dbfile)
+            guard try benchmarkDb.validateToolChainId(dbId) else {
+                fatalError("Cant find ToolChainId: \(dbId) in database")
+            }
+            self.benchmarkDb = benchmarkDb
+            toolChainId = dbId
+        } catch {
+            fatalError("Cant accress benchmarks DB: \(dbfile)")
         }
-        self.db = db
-        toolChainId = dbId
     }
 
 
@@ -69,34 +74,26 @@ final class StatsLogger {
 
         print("\n\(name)")
         print(String(repeating: "-", count: name.count), terminator: "\n\n")
-
-        if let db = self.db {
-            self.sectionId = try db.addSection(name: name)
-        }
+        self.sectionId = try benchmarkDb?.addSection(name: name)
     }
 
 
     func benchmark(name: String, units: String) throws {
         benchmarkName = name
         benchmarkUnits = units
-        if let db = self.db {
-            self.benchmarkId = try db.addBenchmark(sectionId: self.sectionId!, name: name, units: units)
-        }
+        self.benchmarkId = try benchmarkDb?.addBenchmark(sectionId: self.sectionId!, name: name, units: units)
     }
 
 
     func addEntry(result: Decimal) throws {
         let padding = String(repeating: " ", count: 50 - benchmarkName.count)
         print("\(benchmarkName)\(padding): \(result) \(benchmarkUnits)")
-        if let db = self.db {
-            try db.addEntry(toolChainId: toolChainId!, benchmarkId: benchmarkId!, result: result)
-        }
+        try benchmarkDb?.addEntry(toolChainId: toolChainId!, benchmarkId: benchmarkId!, result: result)
     }
 }
 
 
 let statsLogger = StatsLogger()
-
 
 #if !canImport(ObjectiveC)
 public func allTests() -> [XCTestCaseEntry] {
