@@ -74,18 +74,25 @@ final class StatsLogger {
 
         print("\n\(name)")
         print(String(repeating: "-", count: name.count), terminator: "\n\n")
-        self.sectionId = try benchmarkDb?.addSection(name: name)
+
+        guard let db = benchmarkDb else { return }
+        do {
+            self.sectionId = try db.addSection(name: name)
+        } catch {
+            fatalError("Cant addSection: \(name) \(error)")
+        }
     }
 
 
-    func benchmark(name: String, units: String) throws {
-        guard let sectionId = self.sectionId else {
-            fatalError("No valid sectionId, check test has a 'try statsLogger.section(name: \"TestName\")' call")
-        }
-
+    func benchmark(name: String, units: String, file: StaticString = #file, line: UInt = #line) throws {
         benchmarkName = name
         benchmarkUnits = units
-        self.benchmarkId = try benchmarkDb?.addBenchmark(sectionId: sectionId, name: name, units: units)
+
+        guard let db = benchmarkDb else { return }
+        guard let sectionId = self.sectionId else {
+            fatalError("No valid sectionId, check test has a 'try statsLogger.section(name: \"TestName\")' call at \(file):\(line)")
+        }
+        self.benchmarkId = try db.addBenchmark(sectionId: sectionId, name: name, units: units)
     }
 
 
