@@ -5,4 +5,4 @@ RUN export DEBIAN_FRONTEND=noninteractive DEBCONF_NONINTERACTIVE_SEEN=true && ap
 
 COPY . /root/
 WORKDIR /root
-RUN swift run -c release
+RUN swift test -c release
