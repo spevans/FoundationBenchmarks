@@ -79,9 +79,13 @@ final class StatsLogger {
 
 
     func benchmark(name: String, units: String) throws {
+        guard let sectionId = self.sectionId else {
+            fatalError("No valid sectionId, check test has a 'try statsLogger.section(name: \"TestName\")' call")
+        }
+
         benchmarkName = name
         benchmarkUnits = units
-        self.benchmarkId = try benchmarkDb?.addBenchmark(sectionId: self.sectionId!, name: name, units: units)
+        self.benchmarkId = try benchmarkDb?.addBenchmark(sectionId: sectionId, name: name, units: units)
     }
 
 
