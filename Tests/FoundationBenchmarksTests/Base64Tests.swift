@@ -21,7 +21,7 @@
 
 import XCTest
 import Foundation
-import Base64Kit
+import ExtrasBase64
 
 
 final class Base64Tests: XCTestCase {
@@ -118,9 +118,9 @@ final class Base64Tests: XCTestCase {
         let data2String = data2.base64EncodedString()
         let data3String = data3.base64EncodedString()
 
-        let b64kit1String = Base64.encode(bytes: data1)
-        let b64kit2String = Base64.encode(bytes: data2)
-        let b64kit3String = Base64.encode(bytes: data3)
+        let b64kit1String = Base64.encodeString(bytes: data1)
+        let b64kit2String = Base64.encodeString(bytes: data2)
+        let b64kit3String = Base64.encodeString(bytes: data3)
 
         XCTAssertEqual(nsdata1String, data1String)
         XCTAssertEqual(nsdata1String, b64kit1String)
@@ -176,11 +176,11 @@ final class Base64Tests: XCTestCase {
             }
         }
 
-        timing(name: "Base64Kit") {
+        timing(name: "ExtrasBase64") {
             for _ in 1...runs {
-                _ = Base64.encode(bytes: data1)
-                _ = Base64.encode(bytes: data2)
-                _ = Base64.encode(bytes: data3)
+                _ = Base64.encodeString(bytes: data1)
+                _ = Base64.encodeString(bytes: data2)
+                _ = Base64.encodeString(bytes: data3)
             }
         }
 
@@ -212,31 +212,31 @@ final class Base64Tests: XCTestCase {
             }
         }
 
-        timing(name: "Base64Kit - 0 bytes") {
+        timing(name: "ExtrasBase64 - 0 bytes") {
             for _ in 1...runs {
-                _ = Base64.encode(bytes: zeroByteData)
-                _ = Base64.encode(bytes: zeroByteNSData)
+                _ = Base64.encodeString(bytes: zeroByteData)
+                _ = Base64.encodeString(bytes: zeroByteNSData)
             }
         }
 
-        timing(name: "Base64Kit - 1 byte") {
+        timing(name: "ExtrasBase64 - 1 byte") {
             for _ in 1...runs {
-                _ = Base64.encode(bytes: oneByteData)
-                _ = Base64.encode(bytes: oneByteNSData)
+                _ = Base64.encodeString(bytes: oneByteData)
+                _ = Base64.encodeString(bytes: oneByteNSData)
             }
         }
 
-        timing(name: "Base64Kit - 2 bytes") {
+        timing(name: "ExtrasBase64 - 2 bytes") {
             for _ in 1...runs {
-                _ = Base64.encode(bytes: twoByteData)
-                _ = Base64.encode(bytes: twoByteNSData)
+                _ = Base64.encodeString(bytes: twoByteData)
+                _ = Base64.encodeString(bytes: twoByteNSData)
             }
         }
 
-        timing(name: "Base64Kit - 3 bytes") {
+        timing(name: "ExtrasBase64 - 3 bytes") {
             for _ in 1...runs {
-                _ = Base64.encode(bytes: threeByteData)
-                _ = Base64.encode(bytes: threeByteNSData)
+                _ = Base64.encodeString(bytes: threeByteData)
+                _ = Base64.encodeString(bytes: threeByteNSData)
             }
         }
     }
@@ -252,7 +252,7 @@ final class Base64Tests: XCTestCase {
 
         let nsdata1String = nsdata1.base64EncodedString()
         let data1String = data1.base64EncodedString()
-        let b64kit1String = Base64.encode(bytes: data1)
+        let b64kit1String = Base64.encodeString(bytes: data1)
 
         XCTAssertEqual(nsdata1String, data1String)
         XCTAssertEqual(nsdata1String, b64kit1String)
@@ -282,9 +282,9 @@ final class Base64Tests: XCTestCase {
             }
         }
 
-        timing(name: "Base64Kit") {
+        timing(name: "ExtrasBase64") {
             for _ in 1...runs {
-                _ = Base64.encode(bytes: data1)
+                _ = Base64.encodeString(bytes: data1)
             }
         }
     }
@@ -375,7 +375,7 @@ final class Base64Tests: XCTestCase {
             }
         }
 
-        try timing(name: "Base64kit") {
+        try timing(name: "ExtrasBase64") {
             for _ in 1...runs {
 	        _ = try encodedString1.base64decoded()
 	        _ = try encodedString2.base64decoded()
@@ -443,7 +443,7 @@ final class Base64Tests: XCTestCase {
             }
         }
 
-        try timing(name: "Base64kit") {
+        try timing(name: "ExtrasBase64") {
             for _ in 1...runs {
 	        _ = try encodedString1.base64decoded()
 	    }

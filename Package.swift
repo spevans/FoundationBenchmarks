@@ -33,7 +33,7 @@ let package = Package(
         ),
     ],
     dependencies: [
-        .package(url: "https://github.com/fabianfett/swift-base64-kit", .branch("master")),
+        .package(url: "https://github.com/swift-extras/swift-extras-base64", .branch("main")),
         .package(url: "https://github.com/stephencelis/SQLite.swift", from: "0.12.0"),
         .package(url: "https://github.com/apple/swift-argument-parser", from: "0.0.1"),
     ],
@@ -55,7 +55,7 @@ let package = Package(
             name: "FoundationBenchmarksTests",
             dependencies: [
                 "FoundationBenchmarksDB",
-                .product(name: "Base64Kit", package: "swift-base64-kit"),
+                .product(name: "ExtrasBase64", package: "swift-extras-base64"),
             ]),
     ]
 )
