@@ -39,8 +39,8 @@ struct BenchmarkCommand: ParsableCommand {
 
 
 struct Options: ParsableArguments {
-    @Option(default: BenchmarksDB.defaultFilename, help: "SQLite benchmarks file.")
-    var filename: String
+    @Option(help: "SQLite benchmarks file.")
+    var filename = BenchmarksDB.defaultFilename
 
     @Option(help: "Prefixes to remove from all toolchain names.")
     var removePrefixes: String?
@@ -49,7 +49,7 @@ struct Options: ParsableArguments {
     var removeSuffixes: String?
 
     @Flag(help: "Use HTML for output")
-    var html: Bool
+    var html = false
 
     @Argument(help: "Toolchains.")
     var toolchains: [String]
@@ -191,8 +191,8 @@ extension BenchmarkCommand {
     struct List: ParsableCommand {
         static var configuration = CommandConfiguration(abstract: "List the available toolchains in the results file.")
 
-        @Option(default: BenchmarksDB.defaultFilename, help: "SQLite benchmarks file.")
-        var filename: String
+        @Option(help: "SQLite benchmarks file.")
+        var filename = BenchmarksDB.defaultFilename
 
         func run() throws {
             let benchmarkDb = try BenchmarksDB(file: filename)
@@ -209,8 +209,8 @@ extension BenchmarkCommand {
     struct Rename: ParsableCommand {
         static var configuration = CommandConfiguration(abstract: "Rename a toolchain in the results file.")
 
-        @Option(default: BenchmarksDB.defaultFilename, help: "SQLite benchmarks file.")
-        var filename: String
+        @Option(help: "SQLite benchmarks file.")
+        var filename = BenchmarksDB.defaultFilename
 
         @Argument(help: "Toolchain to rename.")
         var toolchain: String
@@ -234,8 +234,8 @@ extension BenchmarkCommand {
     struct Delete: ParsableCommand {
         static var configuration = CommandConfiguration(abstract: "Delete a toolchain from the results file.")
 
-        @Option(default: BenchmarksDB.defaultFilename, help: "SQLite benchmarks file.")
-        var filename: String
+        @Option(help: "SQLite benchmarks file.")
+        var filename = BenchmarksDB.defaultFilename
 
         @Argument(help: "Toolchains.")
         var toolchains: [String]
