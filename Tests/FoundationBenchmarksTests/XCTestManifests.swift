@@ -123,6 +123,7 @@ let statsLogger = StatsLogger()
 public func allTests() -> [XCTestCaseEntry] {
     return [
         testCase(Base64Tests.allTests),
+        testCase(DecimalTests.allTests),
     ]
 }
 #endif
