@@ -26,11 +26,24 @@ import Foundation
 
 // autoreleasepool only exists on Darwin so add a dummy for Linux.
 #if !_runtime(_ObjC)
-func autoreleasepool(invoking block: () throws -> Void) rethrows {
-    try block()
+public func autoreleasepool<Result>(invoking body: () throws -> Result) rethrows -> Result {
+  return try body()
 }
 #endif
 
+internal func timing(name: String, execute: () throws -> Void) {
+    let start = Date()
+    do {
+        try autoreleasepool {
+            try execute()
+        }
+        let time = Decimal(Int(-start.timeIntervalSinceNow * 1000))
+        try statsLogger.benchmark(name: name, units: "ms")
+        try statsLogger.addEntry(result: time)
+    } catch {
+        fatalError("Cant write results to DB: \(error)")
+    }
+}
 
 final class StatsLogger {
 

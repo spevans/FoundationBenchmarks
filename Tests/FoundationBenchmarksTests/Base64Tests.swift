@@ -33,28 +33,18 @@ final class Base64Tests: XCTestCase {
         ("test_base64DecodeLongSpeed", test_base64DecodeLongSpeed),
     ]
 
-    let randomData: [UInt8] = {
-        return (1...16 * 1024 * 1024).map { _ in UInt8.random(in: 0...UInt8.max) }
+    lazy var randomData: Data = {
+        let count = 16 * 1024 * 1024
+        print("Base64Tests: Generating \(count) bytes of random data...", terminator: "")
+        let buffer: [UInt8] = {
+            return (1...count).map { _ in UInt8.random(in: 0...UInt8.max) }
+        }()
+        print("done")
+        return Data(buffer)
     }()
 
-
     override func setUp() {
-        assert(false, "Compile with optimisations")
-    }
-
-
-    private func timing(name: String, execute: () throws -> Void) rethrows {
-        let start = Date()
-        try autoreleasepool {
-            try execute()
-        }
-        let time = Decimal(Int(-start.timeIntervalSinceNow * 1000))
-        do {
-            try statsLogger.benchmark(name: name, units: "ms")
-            try statsLogger.addEntry(result: time)
-        } catch {
-            fatalError("Cant write results to DB: \(error)")
-        }
+        assert(false, "Compile with optimisations using: 'swift test -c release'")
     }
 
     private let optionsLength64: NSData.Base64EncodingOptions = [.lineLength64Characters]
@@ -247,7 +237,7 @@ final class Base64Tests: XCTestCase {
 
         let runs = 100
 
-        let data1 = Data(randomData)
+        let data1 = randomData
         let nsdata1 = NSData(data: data1)
 
         let nsdata1String = nsdata1.base64EncodedString()
@@ -375,7 +365,7 @@ final class Base64Tests: XCTestCase {
             }
         }
 
-        try timing(name: "ExtrasBase64") {
+        timing(name: "ExtrasBase64") {
             for _ in 1...runs {
 	        _ = try encodedString1.base64decoded()
 	        _ = try encodedString2.base64decoded()
@@ -389,7 +379,7 @@ final class Base64Tests: XCTestCase {
         try statsLogger.section(name: "Base64Tests.base64DecodeLongSpeed")
 
         let runs = 100
-        let data1 = Data(randomData)
+        let data1 = randomData
         let encodedData1 = data1.base64EncodedData()
         let encodedString1 = data1.base64EncodedString()
 
@@ -443,7 +433,7 @@ final class Base64Tests: XCTestCase {
             }
         }
 
-        try timing(name: "ExtrasBase64") {
+        timing(name: "ExtrasBase64") {
             for _ in 1...runs {
 	        _ = try encodedString1.base64decoded()
 	    }
