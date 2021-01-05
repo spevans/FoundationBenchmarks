@@ -10,7 +10,7 @@ Currently has tests for Base64 Encoding and Decoding.
 $ swift run FoundationBenchmarks   -h
 OVERVIEW: A utility for benchmarking swift-corelibs-foundation in different Swift toolchains.
 
-USAGE: benchmark-command <subcommand>
+USAGE: foundation-benchmarks <subcommand>
 
 OPTIONS:
   -h, --help              Show help information.
@@ -32,7 +32,7 @@ toolchains as command arguments. The toolchains are checked to see if
 'usr/bin/swift' exists inside the specified directory. To include the default
 toolchain which is in the `$PATH` use the toolchain name `default`:
 
-`swift run FoundationBenchmarks benchmark default ~/swift-5.2-RELEASE-ubuntu18.04 ~/swift-5.3-DEVELOPMENT-SNAPSHOT-2020-05-04-a-ubuntu18.04 ~/local-swift-test`
+`swift run foundation-benchmarks benchmark default ~/swift-5.2-RELEASE-ubuntu18.04 ~/swift-5.3-DEVELOPMENT-SNAPSHOT-2020-05-04-a-ubuntu18.04 ~/local-swift-test`
 
 The tests will be run for each toolchain using `swift test -c release` and the
 results collected into `benchmarks.sqlite3`. Once all of the benchmarks have run

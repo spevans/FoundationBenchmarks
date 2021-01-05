@@ -17,7 +17,7 @@
 import PackageDescription
 
 let package = Package(
-    name: "FoundationBenchmarks",
+    name: "foundation-benchmarks",
     platforms: [
         .macOS(.v10_13),
     ],
@@ -28,7 +28,7 @@ let package = Package(
             targets: ["FoundationBenchmarksDB"]
         ),
         .executable(
-            name: "FoundationBenchmarks",
+            name: "foundation-benchmarks",
             targets: ["FoundationBenchmarks"]
         ),
     ],

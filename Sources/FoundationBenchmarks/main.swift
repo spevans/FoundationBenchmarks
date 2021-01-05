@@ -20,4 +20,4 @@
 //
 
 
-BenchmarkCommand.main()
+FoundationBenchmarks.main()

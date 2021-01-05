@@ -24,12 +24,19 @@ import Foundation
 import FoundationBenchmarksDB
 
 
+let baseTestsName = "FoundationBenchmarksTests"
+let availableTests = [
+    "base64": "Base64Tests",
+    "decimal": "DecimalTests"
+]
+
+
 struct RuntimeError: Error, CustomStringConvertible {
     var description: String
 }
 
 
-struct BenchmarkCommand: ParsableCommand {
+struct FoundationBenchmarks: ParsableCommand {
     static var configuration = CommandConfiguration(
         abstract: "A utility for benchmarking swift-corelibs-foundation using multiple Swift toolchains.",
         subcommands: [Benchmark.self, Show.self, List.self, Rename.self, Delete.self],
@@ -51,12 +58,15 @@ struct Options: ParsableArguments {
     @Flag(help: "Use HTML for output")
     var html = false
 
+    @Option(help: "Tests")
+    var tests = "all"
+
     @Argument(help: "Toolchains.")
-    var toolchains: [String]
+    var toolchains: [String] = []
 }
 
 
-extension BenchmarkCommand {
+extension FoundationBenchmarks {
     struct Benchmark: ParsableCommand {
         static var configuration = CommandConfiguration(abstract: "Run the benchmarks and show the results.")
 
@@ -86,7 +96,7 @@ extension BenchmarkCommand {
             let fileManager = FileManager.default
 
             guard !arguments.isEmpty else {
-                print("No toolchain specified, running using default 'swift' executable in path")
+                print("No toolchain specified, running using default 'swift' executable in $PATH")
                 let toolChainId = try benchmarkDb.addToolChain(name: "default")
                 return [ ToolChain(dbid: toolChainId, name: "default") ]
             }
@@ -116,29 +126,48 @@ extension BenchmarkCommand {
 
 
         func run() throws {
+            let testFilters: [String]
+            print("options.tests: ", options.tests)
+            if options.tests != "all" {
+                var _filters: [String] = []
+                for test in options.tests.split(separator: ",").map({ String($0) }) {
+                    print("test:", test)
+                    guard let testname = availableTests[test] else {
+                         throw RuntimeError(description: "Unknown benchmark \(test). Available benchmarks: \(availableTests.keys.sorted().joined(separator: ","))")
+                    }
+                    _filters.append(baseTestsName + "." + testname)
+                }
+                testFilters = _filters
+            } else {
+                testFilters = [ baseTestsName ]
+            }
+            print("Testing with: \(testFilters)")
+
             let benchmarkDb = try BenchmarksDB(file: options.filename)
             try benchmarkDb.createTables()
             let toolChains = try validateToolChains(benchmarkDb: benchmarkDb, arguments: options.toolchains)
             for toolChain in toolChains {
-                let process = Process()
-                var env = ProcessInfo.processInfo.environment
-                env["BENCHMARKS_DBID"] = toolChain.dbid.description
-                env["BENCHMARKS_DBFILE"] = options.filename
-                process.environment = env
+                for filter in testFilters {
+                    let process = Process()
+                    var env = ProcessInfo.processInfo.environment
+                    env["BENCHMARKS_DBID"] = toolChain.dbid.description
+                    env["BENCHMARKS_DBFILE"] = options.filename
+                    process.environment = env
 
-                print("Running with toolChain: \(toolChain.name)")
-                if let executableURL = toolChain.executableURL {
-                    process.executableURL = executableURL
-                    process.arguments = ["test", "-c", "release" ]
-                } else {
-                    process.executableURL = URL(fileURLWithPath: "/bin/sh")
-                    process.arguments = ["-c", "swift test -c release" ]
-                }
-                try process.run()
-                process.waitUntilExit()
+                    print("Running with toolChain: \(toolChain.name) --filter \(filter)")
+                    if let executableURL = toolChain.executableURL {
+                        process.executableURL = executableURL
+                        process.arguments = ["test", "-c", "release", "--filter", filter ]
+                    } else {
+                        process.executableURL = URL(fileURLWithPath: "/bin/sh")
+                        process.arguments = ["-c", "swift test -c release --filter \(filter)" ]
+                    }
+                    try process.run()
+                    process.waitUntilExit()
 
-                if process.terminationStatus != 0 {
-                    throw RuntimeError(description: "Failed to run test for tool chain '\(toolChain.name)'")
+                    if process.terminationStatus != 0 {
+                        throw RuntimeError(description: "Failed to run test for tool chain '\(toolChain.name)'")
+                    }
                 }
             }
             let benchmarks = try benchmarkDb.listBenchmarks()
@@ -153,7 +182,7 @@ extension BenchmarkCommand {
 }
 
 
-extension BenchmarkCommand {
+extension FoundationBenchmarks {
     struct Show: ParsableCommand {
         static var configuration = CommandConfiguration(abstract: "Show the results.")
 
@@ -187,7 +216,7 @@ extension BenchmarkCommand {
 }
 
 
-extension BenchmarkCommand {
+extension FoundationBenchmarks {
     struct List: ParsableCommand {
         static var configuration = CommandConfiguration(abstract: "List the available toolchains in the results file.")
 
@@ -205,7 +234,7 @@ extension BenchmarkCommand {
 }
 
 
-extension BenchmarkCommand {
+extension FoundationBenchmarks {
     struct Rename: ParsableCommand {
         static var configuration = CommandConfiguration(abstract: "Rename a toolchain in the results file.")
 
@@ -230,7 +259,7 @@ extension BenchmarkCommand {
 }
 
 
-extension BenchmarkCommand {
+extension FoundationBenchmarks {
     struct Delete: ParsableCommand {
         static var configuration = CommandConfiguration(abstract: "Delete a toolchain from the results file.")
 
