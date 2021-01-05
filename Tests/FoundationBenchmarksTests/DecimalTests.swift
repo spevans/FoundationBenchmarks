@@ -12,11 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Base64Tests.swift
+// DecimalTests.swift
 //
 // Created on 20/11/2020
 //
-// Tests Decimal methods.
+// Benchmarks Decimal methods.
 //
 
 import XCTest

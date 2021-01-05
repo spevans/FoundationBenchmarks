@@ -16,7 +16,7 @@
 //
 // Created on 11/05/2020
 //
-// Tests encoding and decoding Base64 Strings.
+// Benchmarks encoding and decoding Base64 Strings.
 //
 
 import XCTest

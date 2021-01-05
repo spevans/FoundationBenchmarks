@@ -97,6 +97,29 @@ final class StatsLogger {
     }
 
 
+    func section(file: String = #file, functionName: String = #function) throws {
+
+        var baseName = file.components(separatedBy: "/").last ?? file
+        if baseName.hasSuffix(".swift") {
+            baseName.removeLast(6)
+        }
+
+
+        var functionName = functionName
+        if let idx = functionName.firstIndex(of: "(") {
+            functionName = String(functionName[..<idx])
+        }
+        if functionName.hasPrefix("test") {
+            functionName.removeFirst(4)
+            if functionName.hasPrefix("_") {
+                functionName.removeFirst(1)
+            }
+        }
+
+        try section(name: "\(baseName).\(functionName)")
+    }
+
+
     func benchmark(name: String, units: String, file: StaticString = #file, line: UInt = #line) throws {
         benchmarkName = name
         benchmarkUnits = units
@@ -124,6 +147,7 @@ public func allTests() -> [XCTestCaseEntry] {
     return [
         testCase(Base64Tests.allTests),
         testCase(DecimalTests.allTests),
+        testCase(JSONTests.allTests),
     ]
 }
 #endif

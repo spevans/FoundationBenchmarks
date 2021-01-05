@@ -27,7 +27,8 @@ import FoundationBenchmarksDB
 let baseTestsName = "FoundationBenchmarksTests"
 let availableTests = [
     "base64": "Base64Tests",
-    "decimal": "DecimalTests"
+    "decimal": "DecimalTests",
+    "json": "JSONTests",
 ]
 
 
