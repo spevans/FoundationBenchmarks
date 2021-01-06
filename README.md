@@ -2,12 +2,10 @@
 
 Simple benchmarks for Foundation, mostly for testing [swift-corelibs-foundation](https://github.com/apple/swift-corelibs-foundation).
 
-Currently has tests for Base64 Encoding and Decoding.
-
-
+Currently has tests for Base64 Encoding and Decoding and JSON Decoding of numbers.
 
 ```
-$ swift run FoundationBenchmarks   -h
+$ swift run foundation-benchmarks -h
 OVERVIEW: A utility for benchmarking swift-corelibs-foundation in different Swift toolchains.
 
 USAGE: foundation-benchmarks <subcommand>
@@ -42,11 +40,11 @@ last toolchains.
 
 To show just the results table again without running the tests, use the `show` command, optionally listing the toolchains to display
 
-`swift run FoundationBenchmarks show`
+`swift run foundation-benchmarks show`
 
 Example output:
 ```
-$ swift run FoundationBenchmarks show swift-test-master swift-encode3
+$ swift run foundation-benchmarks show swift-test-master swift-encode3
 
 | Base64Tests.base64EncodeShortSpeed        | swift-test-master | swift-encode3 | difference |  pct  |
 |-------------------------------------------|-------------------|---------------|------------|-------|

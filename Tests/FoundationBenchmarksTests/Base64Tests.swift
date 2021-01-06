@@ -34,7 +34,7 @@ final class Base64Tests: XCTestCase {
     ]
 
     lazy var randomData: Data = {
-        let count = 16 * 1024 * 1024
+        let count = 16 * 1024 * (runsInTestMode() ?? 1024)
         print("Base64Tests: Generating \(count) bytes of random data...", terminator: "")
         let buffer: [UInt8] = {
             return (1...count).map { _ in UInt8.random(in: 0...UInt8.max) }
@@ -87,7 +87,7 @@ final class Base64Tests: XCTestCase {
 
         try statsLogger.section(name: "Base64Tests.base64EncodeShortSpeed")
 
-        let runs = 1000_000
+        let runs = runsInTestMode() ?? 1000_000
         let bytes1 = Array(UInt8(0)...UInt8(255))
         let bytes2 = Array(UInt8(0)...UInt8(254))
         let bytes3 = Array(UInt8(0)...UInt8(253))
@@ -235,7 +235,7 @@ final class Base64Tests: XCTestCase {
     func test_base64EncodeLongSpeed() throws {
         try statsLogger.section(name: "Base64Tests.base64EncodeLongSpeed")
 
-        let runs = 100
+        let runs = runsInTestMode() ?? 100
 
         let data1 = randomData
         let nsdata1 = NSData(data: data1)
@@ -283,7 +283,7 @@ final class Base64Tests: XCTestCase {
     func test_base64DecodeShortSpeed() throws {
         try statsLogger.section(name: "Base64Tests.base64DecodeShortSpeed")
 
-        let runs = 1000_000
+        let runs = runsInTestMode() ?? 1000_000
         let bytes1 = Array(UInt8(0)...UInt8(255))
         let data1 = Data(bytes1)
         let encodedData1 = data1.base64EncodedData()
@@ -378,7 +378,7 @@ final class Base64Tests: XCTestCase {
     func test_base64DecodeLongSpeed() throws {
         try statsLogger.section(name: "Base64Tests.base64DecodeLongSpeed")
 
-        let runs = 100
+        let runs = runsInTestMode() ?? 100
         let data1 = randomData
         let encodedData1 = data1.base64EncodedData()
         let encodedString1 = data1.base64EncodedString()

@@ -151,6 +151,7 @@ extension FoundationBenchmarks {
                 for filter in testFilters {
                     let process = Process()
                     var env = ProcessInfo.processInfo.environment
+                    env["BENCHMARKS_MODE"] = "1"
                     env["BENCHMARKS_DBID"] = toolChain.dbid.description
                     env["BENCHMARKS_DBFILE"] = options.filename
                     process.environment = env

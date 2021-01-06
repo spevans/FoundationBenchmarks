@@ -32,7 +32,7 @@ final class JSONTests: XCTestCase {
 
     func test_deserializationNumbers() throws {
         try statsLogger.section()
-        let runs = 10
+        let runs = runsInTestMode() ?? 10
         let range = 50000
 
         struct SomeNumbers: Codable {

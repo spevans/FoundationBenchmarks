@@ -45,6 +45,15 @@ internal func timing(name: String, execute: () throws -> Void) {
     }
 }
 
+
+// How many runs of a test to perform. When running under `swift test -c release` to just test
+// the benchmarks, tests should only use 1 run. When running in the benchmarking mode, return
+// nil so that the caller can decide how many runs to perform.
+func runsInTestMode() -> Int? {
+    return (ProcessInfo.processInfo.environment["BENCHMARKS_MODE"] == nil) ? 1 : nil
+}
+
+
 final class StatsLogger {
 
     private let benchmarkDb: BenchmarksDB?

@@ -34,12 +34,12 @@ final class DecimalTests: XCTestCase {
     func test_DecimalInitFromDouble() throws {
 
         try statsLogger.section(name: "DecimalTests.DecimalInitFromDouble")
-        let testCount = 100000
-        let randomDoubles = (1...testCount).map { Int -> Double in
+        let runs = runsInTestMode() ?? 100_000
+        let randomDoubles = (1...runs).map { Int -> Double in
             Double(bitPattern: UInt64.random(in: UInt64.min...UInt64.max))
         }
 
-        timing(name: "Decimal.init(Double) with \(testCount) Doubles") {
+        timing(name: "Decimal.init(Double) with \(runs) Doubles") {
             for d in randomDoubles {
                 _ = Decimal(d)
             }
