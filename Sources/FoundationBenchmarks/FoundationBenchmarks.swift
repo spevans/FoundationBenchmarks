@@ -43,6 +43,26 @@ struct FoundationBenchmarks: ParsableCommand {
         subcommands: [Benchmark.self, Show.self, List.self, Rename.self, Delete.self],
         defaultSubcommand: Benchmark.self
     )
+
+
+    static func showBenchmarksFor(tests: [String], toolChains: [ToolChain], benchmarkDb: BenchmarksDB, asHTML html: Bool) throws {
+        let testFilters = tests.map { "\($0)." }
+        let benchmarks = try benchmarkDb.listBenchmarks().filter {
+            if testFilters.count == 0 { return true }
+            for test in testFilters {
+                if let sectionName = $0.sectionName, sectionName.hasPrefix(test) {
+                    return true
+                }
+            }
+            return false
+        }
+        let results = try benchmarkDb.resultsFor(toolChains: toolChains, with: benchmarks)
+        if html {
+            showHTMLStatsWith(results: results, forBenchmarks: benchmarks)
+        } else {
+            showStatsWith(results: results, forBenchmarks: benchmarks)
+        }
+    }
 }
 
 
@@ -64,6 +84,20 @@ struct Options: ParsableArguments {
 
     @Argument(help: "Toolchains.")
     var toolchains: [String] = []
+
+    func splitTests() throws -> [String] {
+        if tests == "all" {
+            return []
+        }
+        var filters: [String] = []
+        for test in tests.split(separator: ",").map({ String($0) }) {
+            guard let testname = availableTests[test] else {
+                throw RuntimeError(description: "Unknown benchmark \(test). Available benchmarks: \(availableTests.keys.sorted().joined(separator: ","))")
+            }
+            filters.append(testname)
+        }
+        return filters
+    }
 }
 
 
@@ -112,7 +146,7 @@ extension FoundationBenchmarks {
                     let baseURL = URL(fileURLWithPath: arg)
                     let execURL = baseURL.appendingPathComponent("usr/bin/swift")
                     guard fileManager.isExecutableFile(atPath: execURL.path) else {
-                        throw RuntimeError(description: "Invalid toolchain \(arg): cant find exectable \(execURL.path)")
+                        throw RuntimeError(description: "Invalid toolchain '\(arg)': cant find exectable \(execURL.path)")
                     }
                     executableURL = execURL
                     baseName = baseURL.lastPathComponent
@@ -127,22 +161,10 @@ extension FoundationBenchmarks {
 
 
         func run() throws {
-            let testFilters: [String]
-            print("options.tests: ", options.tests)
-            if options.tests != "all" {
-                var _filters: [String] = []
-                for test in options.tests.split(separator: ",").map({ String($0) }) {
-                    print("test:", test)
-                    guard let testname = availableTests[test] else {
-                         throw RuntimeError(description: "Unknown benchmark \(test). Available benchmarks: \(availableTests.keys.sorted().joined(separator: ","))")
-                    }
-                    _filters.append(baseTestsName + "." + testname)
-                }
-                testFilters = _filters
-            } else {
-                testFilters = [ baseTestsName ]
-            }
-            print("Testing with: \(testFilters)")
+            let testFilters: [String] = try {
+                let filters = try options.splitTests()
+                return filters.count == 0 ? [ baseTestsName ] : filters.map { baseTestsName + "." + $0 }
+            }()
 
             let benchmarkDb = try BenchmarksDB(file: options.filename)
             try benchmarkDb.createTables()
@@ -172,13 +194,8 @@ extension FoundationBenchmarks {
                     }
                 }
             }
-            let benchmarks = try benchmarkDb.listBenchmarks()
-            let results = try benchmarkDb.resultsFor(toolChains: toolChains, with: benchmarks)
-            if options.html {
-                showHTMLStatsWith(results: results, forBenchmarks: benchmarks)
-            } else {
-                showStatsWith(results: results, forBenchmarks: benchmarks)
-            }
+            try FoundationBenchmarks.showBenchmarksFor(tests: options.splitTests(), toolChains: toolChains,
+                benchmarkDb: benchmarkDb, asHTML: options.html)
         }
     }
 }
@@ -193,6 +210,7 @@ extension FoundationBenchmarks {
 
 
         func run() throws {
+
             let benchmarkDb = try BenchmarksDB(file: options.filename)
             var toolChains: [ToolChain] = []
 
@@ -206,13 +224,9 @@ extension FoundationBenchmarks {
                     toolChains.append(toolChain)
                 }
             }
-            let benchmarks = try benchmarkDb.listBenchmarks()
-            let results = try benchmarkDb.resultsFor(toolChains: toolChains, with: benchmarks)
-            if options.html {
-                showHTMLStatsWith(results: results, forBenchmarks: benchmarks)
-            } else {
-                showStatsWith(results: results, forBenchmarks: benchmarks)
-            }
+
+            try FoundationBenchmarks.showBenchmarksFor(tests: options.splitTests(), toolChains: toolChains,
+                benchmarkDb: benchmarkDb, asHTML: options.html)
         }
     }
 }

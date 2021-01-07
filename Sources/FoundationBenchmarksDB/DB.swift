@@ -311,12 +311,8 @@ ORDER BY sect_id, bnch_id;
                 }
             }
 
-            if let benchmarkId = benchmarkId, benchmarkIds.contains(benchmarkId) {
-                if let entry = entry {
-                    results[benchmarkId] = entry
-                }
-            } else {
-                fatalError("Bad DB result from select")
+            if let benchmarkId = benchmarkId, benchmarkIds.contains(benchmarkId), let entry = entry {
+                results[benchmarkId] = entry
             }
         }
         return ToolChainResults(toolChain: toolChain, benchmarks: benchmarks, results: results)
