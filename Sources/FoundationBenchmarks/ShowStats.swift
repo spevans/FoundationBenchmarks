@@ -85,7 +85,7 @@ func showStatsWith(results: [ToolChainResults], forBenchmarks benchmarks: [Bench
     let fullResults = resultsWithDifferences(results, benchmarks: benchmarks)
 
     // Find longest section/benchmark name for padding.
-    let maxSectionWidth = benchmarks.map { max($0.name.count, $0.sectionName?.count ?? 0) }.max() ?? 0
+    let maxSectionWidth = benchmarks.map { max($0.name.count, $0.sectionName.count) }.max() ?? 0
 
     // Create the separator between the heading row and the first data row
     var vSeparator = "|\(String(repeating: "-", count: maxSectionWidth + 2))|"
@@ -101,7 +101,7 @@ func showStatsWith(results: [ToolChainResults], forBenchmarks benchmarks: [Bench
     var currentSection = ""
     for benchmark in benchmarks {
         if benchmark.sectionName != currentSection {
-            currentSection = benchmark.sectionName ?? ""
+            currentSection = benchmark.sectionName
 
             // Header with Toolchain name and 'difference' / 'pct' columns
             let spacing = String(repeating: " ", count: maxSectionWidth - currentSection.count)
@@ -193,7 +193,7 @@ func showHTMLStatsWith(results: [ToolChainResults], forBenchmarks benchmarks: [B
                 print("    </table>\n    <!-- End of \(currentSection) -->\n")
             }
 
-            currentSection = benchmark.sectionName ?? ""
+            currentSection = benchmark.sectionName
 
             // Header with Toolchain name and 'difference' / 'pct' columns
 

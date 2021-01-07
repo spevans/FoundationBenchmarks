@@ -53,9 +53,9 @@ public struct Benchmark {
     public let dbid: Int64
     public let name: String
     public let units: String
-    public let sectionName: String?
+    public let sectionName: String
 
-    public init(dbid: Int64, name: String, units: String, sectionName: String? = nil) {
+    public init(dbid: Int64, name: String, units: String, sectionName: String) {
         self.dbid = dbid
         self.name = name
         self.units = units
@@ -253,7 +253,7 @@ INSERT INTO entries (entr_tlch_id, entr_bnch_id, entr_result)
   SELECT bnch_id, sect_name, bnch_name, bnch_units
     FROM benchmarks
     JOIN sections ON sect_id = bnch_sect_id
-ORDER BY sect_id, bnch_id
+ORDER BY sect_id, bnch_name
 """)
         try stmt.run()
 
@@ -357,19 +357,4 @@ ORDER BY sect_id, bnch_id;
         return result
     }
 
-
-    public func listSections() throws -> [Section] {
-        var results: [Section] = []
-
-        for row in try connection.prepare(sections.order(sectionId)) {
-            var results2: [Benchmark] = []
-            for row2 in try connection.prepare(benchmarks.filter(benchmarkSectionId == row[sectionId])
-                .order(benchmarkId)) {
-                results2.append(Benchmark(dbid: row2[benchmarkId], name: row2[benchmarkName],
-                                          units: row2[benchmarkUnits]))
-                }
-            results.append(Section(dbid: row[sectionId], name: row[sectionName], benchmarks: results2))
-        }
-        return results
-    }
 }

@@ -50,7 +50,7 @@ struct FoundationBenchmarks: ParsableCommand {
         let benchmarks = try benchmarkDb.listBenchmarks().filter {
             if testFilters.count == 0 { return true }
             for test in testFilters {
-                if let sectionName = $0.sectionName, sectionName.hasPrefix(test) {
+                if $0.sectionName.hasPrefix(test) {
                     return true
                 }
             }
