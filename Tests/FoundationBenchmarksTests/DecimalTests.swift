@@ -26,22 +26,30 @@ import Foundation
 final class DecimalTests: XCTestCase {
 
     static var allTests = [
-        ("test_DecimalInitFromDouble", test_DecimalInitFromDouble)
+        ("test_DecimalInit", test_DecimalInit),
     ]
 
 
-    // Timing for creaating a Decimal from a Double.
-    func test_DecimalInitFromDouble() throws {
+    func test_DecimalInit() throws {
 
-        try statsLogger.section(name: "DecimalTests.DecimalInitFromDouble")
+        try statsLogger.section()
         let runs = runsInTestMode() ?? 100_000
+
         let randomDoubles = (1...runs).map { Int -> Double in
             Double(bitPattern: UInt64.random(in: UInt64.min...UInt64.max))
         }
 
-        timing(name: "Decimal.init(Double) with \(runs) Doubles") {
+        let stringDoubles = randomDoubles.map { $0.description }
+
+        timing(name: "Decimal.init(Double)") {
             for d in randomDoubles {
                 _ = Decimal(d)
+            }
+        }
+
+        timing(name: "Decimal(string:)") {
+            for d in stringDoubles {
+                _ = Decimal(string: d)
             }
         }
     }

@@ -85,7 +85,7 @@ final class Base64Tests: XCTestCase {
 
     func test_base64EncodeShortSpeed() throws {
 
-        try statsLogger.section(name: "Base64Tests.base64EncodeShortSpeed")
+        try statsLogger.section()
 
         let runs = runsInTestMode() ?? 1000_000
         let bytes1 = Array(UInt8(0)...UInt8(255))
@@ -233,7 +233,7 @@ final class Base64Tests: XCTestCase {
 
 
     func test_base64EncodeLongSpeed() throws {
-        try statsLogger.section(name: "Base64Tests.base64EncodeLongSpeed")
+        try statsLogger.section()
 
         let runs = runsInTestMode() ?? 100
 
@@ -281,7 +281,7 @@ final class Base64Tests: XCTestCase {
 
 
     func test_base64DecodeShortSpeed() throws {
-        try statsLogger.section(name: "Base64Tests.base64DecodeShortSpeed")
+        try statsLogger.section()
 
         let runs = runsInTestMode() ?? 1000_000
         let bytes1 = Array(UInt8(0)...UInt8(255))
@@ -376,7 +376,7 @@ final class Base64Tests: XCTestCase {
 
 
     func test_base64DecodeLongSpeed() throws {
-        try statsLogger.section(name: "Base64Tests.base64DecodeLongSpeed")
+        try statsLogger.section()
 
         let runs = runsInTestMode() ?? 100
         let data1 = randomData

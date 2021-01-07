@@ -88,7 +88,7 @@ final class StatsLogger {
     }
 
 
-    func section(name: String) throws {
+    private func section(name: String) throws {
         sectionId = nil
         benchmarkId = nil
         benchmarkName = ""
@@ -107,12 +107,10 @@ final class StatsLogger {
 
 
     func section(file: String = #file, functionName: String = #function) throws {
-
         var baseName = file.components(separatedBy: "/").last ?? file
         if baseName.hasSuffix(".swift") {
             baseName.removeLast(6)
         }
-
 
         var functionName = functionName
         if let idx = functionName.firstIndex(of: "(") {
