@@ -43,10 +43,6 @@ final class Base64Tests: XCTestCase {
         return Data(buffer)
     }()
 
-    override func setUp() {
-        assert(false, "Compile with optimisations using: 'swift test -c release'")
-    }
-
     private let optionsLength64: NSData.Base64EncodingOptions = [.lineLength64Characters]
     private let optionsLength64withCR: NSData.Base64EncodingOptions = [.lineLength64Characters,
         .endLineWithCarriageReturn
