@@ -22,32 +22,40 @@
 import XCTest
 import Foundation
 
+private let runs = { runsInTestMode() ?? 10 }()
 
-final class JSONTests: XCTestCase {
+private struct SomeNumbers: Codable {
+    let int: Int
+    let double: Double
+    let decimal: Decimal
+}
 
-    static var allTests = [
-        ("test_deserialization", test_deserializationNumbers),
-    ]
+private struct TestData {
+    let zerosJsonData: Data
+    let zeroDotZerosJsonData: Data
+    let intMinsJsonData: Data
+    let intMinDotZerosJsonData: Data
+    let intsJsonData: Data
+    let doublesJsonData: Data
+    let decimalsJsonData: Data
+    let someNumbersJsonData: Data
 
+    init() throws {
 
-    func test_deserializationNumbers() throws {
-        try statsLogger.section()
-        let runs = runsInTestMode() ?? 10
         let range = 50000
-
-        struct SomeNumbers: Codable {
-            let int: Int
-            let double: Double
-            let decimal: Decimal
-        }
-
         let capacity = (2 * range) + 1
         let zeros = (1...capacity).map { _ in 0 }
+        let intMins = (1...capacity).map { _ in Int.min }
+
+        zerosJsonData = try JSONEncoder().encode(zeros)
+        zeroDotZerosJsonData = ("[" + zeros.map { "\($0).0" }.joined(separator: ", ") + "]").data(using: .utf8)!
+        intMinsJsonData = try JSONEncoder().encode(intMins)
+        intMinDotZerosJsonData = ("[" + intMins.map { "\($0).0" }.joined(separator: ", ") + "]").data(using: .utf8)!
+
         var ints: [Int] = []
         var doubles: [Double] = []
         var decimals: [Decimal] = []
         var someNumbers: [SomeNumbers] = []
-
         ints.reserveCapacity(capacity)
         doubles.reserveCapacity(capacity)
         decimals.reserveCapacity(capacity)
@@ -63,76 +71,192 @@ final class JSONTests: XCTestCase {
             doubles.append(aDouble)
             decimals.append(aDecimal)
         }
+        intsJsonData = try JSONEncoder().encode(ints)
+        doublesJsonData = try JSONEncoder().encode(doubles)
+        decimalsJsonData = try JSONEncoder().encode(decimals)
+        someNumbersJsonData = try JSONEncoder().encode(someNumbers)
+    }
+}
 
-        let zerosJsonData = try JSONEncoder().encode(zeros)
-        let intsJsonData = try JSONEncoder().encode(ints)
-        let doublesJsonData = try JSONEncoder().encode(doubles)
-        let decimalsJsonData = try JSONEncoder().encode(decimals)
-        let someNumbersJsonData = try JSONEncoder().encode(someNumbers)
+private let testData: TestData = {
+    do {
+        return try TestData()
+    } catch {
+        fatalError("Error setting up TestData: \(error)")
+    }
+}()
 
-        timing(name: "JSONSerialization.jsonObject - zeros") {
+
+final class JSONTests: XCTestCase {
+
+    static var allTests = [
+        ("testDeserialization", testDeserializationNumbers),
+        ("testDecoding", testDecoding),
+        ("testBridging", testBridging)
+    ]
+
+
+    func testDeserializationNumbers() throws {
+        try statsLogger.section()
+
+        timing(name: "JSONSerialization.jsonObject - \"0\"") {
             for _ in 1...runs {
-                _ = try JSONSerialization.jsonObject(with: zerosJsonData)
-                //XCTAssertEqual(results.count, ints.count)
+                _ = try JSONSerialization.jsonObject(with: testData.zerosJsonData)
+            }
+        }
+
+        timing(name: "JSONSerialization.jsonObject - \"0.0\"") {
+            for _ in 1...runs {
+                _ = try JSONSerialization.jsonObject(with: testData.zeroDotZerosJsonData)
+            }
+        }
+
+        timing(name: "JSONSerialization.jsonObject - \"Int.min\"") {
+            for _ in 1...runs {
+                _ = try JSONSerialization.jsonObject(with: testData.intMinsJsonData)
+            }
+        }
+
+        timing(name: "JSONSerialization.jsonObject - \"Int.min.0\"") {
+            for _ in 1...runs {
+                _ = try JSONSerialization.jsonObject(with: testData.intMinDotZerosJsonData)
             }
         }
 
         timing(name: "JSONSerialization.jsonObject - Int") {
             for _ in 1...runs {
-                let results = try JSONSerialization.jsonObject(with: intsJsonData) as! [Int]
-                XCTAssertEqual(results.count, ints.count)
+                _ = try JSONSerialization.jsonObject(with: testData.intsJsonData) as! [Int]
             }
         }
 
         timing(name: "JSONSerialization.jsonObject - Double") {
             for _ in 1...runs {
-                let results = try JSONSerialization.jsonObject(with: doublesJsonData) as! [Double]
-                XCTAssertEqual(results.count, doubles.count)
+                _ = try JSONSerialization.jsonObject(with: testData.doublesJsonData) as! [Double]
+            }
+        }
+
+        timing(name: "JSONSerialization.jsonObject - Decimal") {
+            for _ in 1...runs {
+                _ = try JSONSerialization.jsonObject(with: testData.decimalsJsonData) as? [NSDecimalNumber]
             }
         }
 
         timing(name: "JSONSerialization.jsonObject - someNumbers") {
             for _ in 1...runs {
-                let results = try JSONSerialization.jsonObject(with: someNumbersJsonData) as! [ [String: NSNumber] ]
-                XCTAssertEqual(results.count, someNumbers.count)
-                for result in results {
-                    _ = SomeNumbers(int: result["int"] as! Int, double: result["double"] as! Double, decimal: result["decimal"]!.decimalValue)
-                }
+                _ = try JSONSerialization.jsonObject(with: testData.someNumbersJsonData) as! [ [String: NSNumber] ]
+                //    for result in results {
+                ////        _ = SomeNumbers(int: result["int"] as! Int, double: result["double"] as! Double, decimal: result["decimal"]!.decimalValue)
+                //    }
             }
         }
 
-        timing(name: "JSONDecoder - zeros") {
+    }
+
+    func testDecoding() throws {
+        try statsLogger.section()
+
+        timing(name: "JSONDecoder - \"0\" to Int") {
             for _ in 1...runs {
-                let results = try JSONDecoder().decode([Int].self, from: zerosJsonData)
-                XCTAssertEqual(results.count, zeros.count)
+                _ = try JSONDecoder().decode([Int].self, from: testData.zerosJsonData)
+            }
+        }
+
+        timing(name: "JSONDecoder - \"0.0\" to Int") {
+            for _ in 1...runs {
+                _ = try JSONDecoder().decode([Int].self, from: testData.zeroDotZerosJsonData)
+            }
+        }
+
+        timing(name: "JSONDecoder - \"Int.min\" to Int") {
+            for _ in 1...runs {
+                _ = try JSONDecoder().decode([Int].self, from: testData.intMinsJsonData)
+            }
+        }
+
+        timing(name: "JSONDecoder - \"Int.min\".0 to Int") {
+            for _ in 1...runs {
+                _ = try JSONDecoder().decode([Int].self, from: testData.intMinsJsonData)
             }
         }
 
         timing(name: "JSONDecoder - Int") {
             for _ in 1...runs {
-                let results = try JSONDecoder().decode([Int].self, from: intsJsonData)
-                XCTAssertEqual(results.count, ints.count)
+                _ = try JSONDecoder().decode([Int].self, from: testData.intsJsonData)
             }
         }
 
         timing(name: "JSONDecoder - Double") {
             for _ in 1...runs {
-                let results = try JSONDecoder().decode([Double].self, from: doublesJsonData)
-                XCTAssertEqual(results.count, doubles.count)
+                _ = try JSONDecoder().decode([Double].self, from: testData.doublesJsonData)
             }
         }
 
         timing(name: "JSONDecoder - Decimal") {
             for _ in 1...runs {
-                let results = try JSONDecoder().decode([Decimal].self, from: decimalsJsonData)
-                XCTAssertEqual(results.count, decimals.count)
+                _ = try JSONDecoder().decode([Decimal].self, from: testData.decimalsJsonData)
             }
         }
 
         timing(name: "JSONDecoder - someNumbers") {
             for _ in 1...runs {
-                let results = try JSONDecoder().decode([SomeNumbers].self, from: someNumbersJsonData)
-                XCTAssertEqual(results.count, someNumbers.count)
+                _ = try JSONDecoder().decode([SomeNumbers].self, from: testData.someNumbersJsonData)
+            }
+        }
+    }
+
+
+    func testBridging() throws {
+        try statsLogger.section()
+
+        let zeros =  try JSONSerialization.jsonObject(with: testData.zerosJsonData)
+        timing(name: "Bridging \"0\" to Int") {
+            for _ in 1...runs {
+                _  = zeros as! [Int]
+            }
+        }
+
+        timing(name: "Bridging \"0\" to Double") {
+            for _ in 1...runs {
+                _ = zeros as! [Double]
+            }
+        }
+
+        let zeroDotZeros =  try JSONSerialization.jsonObject(with: testData.zeroDotZerosJsonData)
+        timing(name: "Bridging \"0.0\" to Int") {
+            for _ in 1...runs {
+                _ = zeroDotZeros as! [Int]
+            }
+        }
+
+        timing(name: "Bridging \"0.0\" to Double") {
+            for _ in 1...runs {
+                _ = zeroDotZeros as! [Double]
+            }
+        }
+
+        let intMins =  try JSONSerialization.jsonObject(with: testData.intMinsJsonData)
+        timing(name: "Bridging Int.min to Int") {
+            for _ in 1...runs {
+                _ = intMins as! [Int]
+            }
+        }
+
+        timing(name: "Bridging Int.min to Double") {
+            for _ in 1...runs {
+                _ = intMins as! [Int]
+            }
+        }
+
+        let intMinDotZeros =  try JSONSerialization.jsonObject(with: testData.intMinDotZerosJsonData)
+        timing(name: "Bridging \"Int.min.0\" to Int") {
+            for _ in 1...runs {
+                _ = intMinDotZeros as! [Int]
+            }
+        }
+
+        timing(name: "Bridging \"Int.min.0\" to Double") {
+            for _ in 1...runs {
+                _ = intMinDotZeros as! [Int]
             }
         }
     }
