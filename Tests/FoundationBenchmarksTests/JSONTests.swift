@@ -120,55 +120,39 @@ final class JSONTests: XCTestCase {
     func testDeserializationNumbers() throws {
         try statsLogger.section()
 
-        timing(name: "JSONSerialization.jsonObject - \"0\"") {
-            for _ in 1...runs {
-                _ = try JSONSerialization.jsonObject(with: testData.zerosJsonData)
-            }
+        timing(name: "JSONSerialization.jsonObject - \"0\"", runs: runs) {
+            try JSONSerialization.jsonObject(with: testData.zerosJsonData)
         }
 
-        timing(name: "JSONSerialization.jsonObject - \"0.0\"") {
-            for _ in 1...runs {
-                _ = try JSONSerialization.jsonObject(with: testData.zeroDotZerosJsonData)
-            }
+        timing(name: "JSONSerialization.jsonObject - \"0.0\"", runs: runs) {
+            _ = try JSONSerialization.jsonObject(with: testData.zeroDotZerosJsonData)
         }
 
-        timing(name: "JSONSerialization.jsonObject - \"Int.min\"") {
-            for _ in 1...runs {
-                _ = try JSONSerialization.jsonObject(with: testData.intMinsJsonData)
-            }
+        timing(name: "JSONSerialization.jsonObject - \"Int.min\"", runs: runs) {
+            _ = try JSONSerialization.jsonObject(with: testData.intMinsJsonData)
         }
 
-        timing(name: "JSONSerialization.jsonObject - \"Int.min.0\"") {
-            for _ in 1...runs {
-                _ = try JSONSerialization.jsonObject(with: testData.intMinDotZerosJsonData)
-            }
+        timing(name: "JSONSerialization.jsonObject - \"Int.min.0\"", runs: runs) {
+            _ = try JSONSerialization.jsonObject(with: testData.intMinDotZerosJsonData)
         }
 
-        timing(name: "JSONSerialization.jsonObject - Int") {
-            for _ in 1...runs {
-                _ = try JSONSerialization.jsonObject(with: testData.intsJsonData) as! [Int]
-            }
+        timing(name: "JSONSerialization.jsonObject - Int", runs: runs) {
+            _ = try JSONSerialization.jsonObject(with: testData.intsJsonData) as! [Int]
         }
 
-        timing(name: "JSONSerialization.jsonObject - Double") {
-            for _ in 1...runs {
-                _ = try JSONSerialization.jsonObject(with: testData.doublesJsonData) as! [Double]
-            }
+        timing(name: "JSONSerialization.jsonObject - Double", runs: runs) {
+            _ = try JSONSerialization.jsonObject(with: testData.doublesJsonData) as! [Double]
         }
 
-        timing(name: "JSONSerialization.jsonObject - Decimal") {
-            for _ in 1...runs {
-                _ = try JSONSerialization.jsonObject(with: testData.decimalsJsonData) as? [NSDecimalNumber]
-            }
+        timing(name: "JSONSerialization.jsonObject - Decimal", runs: runs) {
+            _ = try JSONSerialization.jsonObject(with: testData.decimalsJsonData) as? [NSDecimalNumber]
         }
 
-        timing(name: "JSONSerialization.jsonObject - someNumbers") {
-            for _ in 1...runs {
-                _ = try JSONSerialization.jsonObject(with: testData.someNumbersJsonData) as! [ [String: NSNumber] ]
-                //    for result in results {
-                ////        _ = SomeNumbers(int: result["int"] as! Int, double: result["double"] as! Double, decimal: result["decimal"]!.decimalValue)
-                //    }
-            }
+        timing(name: "JSONSerialization.jsonObject - someNumbers", runs: runs) {
+            _ = try JSONSerialization.jsonObject(with: testData.someNumbersJsonData) as! [ [String: NSNumber] ]
+            //    for result in results {
+            ////        _ = SomeNumbers(int: result["int"] as! Int, double: result["double"] as! Double, decimal: result["decimal"]!.decimalValue)
+            //    }
         }
 
     }
@@ -176,93 +160,65 @@ final class JSONTests: XCTestCase {
     func testDecoding() throws {
         try statsLogger.section()
 
-        timing(name: "JSONDecoder - \"0\" to Int") {
-            for _ in 1...runs {
-                _ = try JSONDecoder().decode([Int].self, from: testData.zerosJsonData)
-            }
+        timing(name: "JSONDecoder - \"0\" to Int", runs: runs) {
+            _ = try JSONDecoder().decode([Int].self, from: testData.zerosJsonData)
         }
 
-        timing(name: "JSONDecoder - \"0.0\" to Int") {
-            for _ in 1...runs {
-                _ = try JSONDecoder().decode([Int].self, from: testData.zeroDotZerosJsonData)
-            }
+        timing(name: "JSONDecoder - \"0.0\" to Int", runs: runs) {
+            _ = try JSONDecoder().decode([Int].self, from: testData.zeroDotZerosJsonData)
         }
 
-        timing(name: "JSONDecoder - \"Int.min\" to Int") {
-            for _ in 1...runs {
-                _ = try JSONDecoder().decode([Int].self, from: testData.intMinsJsonData)
-            }
+        timing(name: "JSONDecoder - \"Int.min\" to Int", runs: runs) {
+            _ = try JSONDecoder().decode([Int].self, from: testData.intMinsJsonData)
         }
 
-        timing(name: "JSONDecoder - \"Int.min\".0 to Int") {
-            for _ in 1...runs {
-                _ = try JSONDecoder().decode([Int].self, from: testData.intMinsJsonData)
-            }
+        timing(name: "JSONDecoder - \"Int.min\".0 to Int", runs: runs) {
+            _ = try JSONDecoder().decode([Int].self, from: testData.intMinsJsonData)
         }
 
-        timing(name: "JSONDecoder - Int") {
-            for _ in 1...runs {
-                _ = try JSONDecoder().decode([Int].self, from: testData.intsJsonData)
-            }
+        timing(name: "JSONDecoder - Int", runs: runs) {
+            _ = try JSONDecoder().decode([Int].self, from: testData.intsJsonData)
         }
 
-        timing(name: "JSONDecoder - Double") {
-            for _ in 1...runs {
-                _ = try JSONDecoder().decode([Double].self, from: testData.doublesJsonData)
-            }
+        timing(name: "JSONDecoder - Double", runs: runs) {
+            _ = try JSONDecoder().decode([Double].self, from: testData.doublesJsonData)
         }
 
-        timing(name: "JSONDecoder - Decimal") {
-            for _ in 1...runs {
-                _ = try JSONDecoder().decode([Decimal].self, from: testData.decimalsJsonData)
-            }
+        timing(name: "JSONDecoder - Decimal", runs: runs) {
+            _ = try JSONDecoder().decode([Decimal].self, from: testData.decimalsJsonData)
         }
 
-        timing(name: "JSONDecoder - someNumbers") {
-            for _ in 1...runs {
-                _ = try JSONDecoder().decode([SomeNumbers].self, from: testData.someNumbersJsonData)
-            }
+        timing(name: "JSONDecoder - someNumbers", runs: runs) {
+            _ = try JSONDecoder().decode([SomeNumbers].self, from: testData.someNumbersJsonData)
         }
     }
 
     func testSampleStructureJSON() throws {
         try statsLogger.section()
 
-        timing(name: "JSONDeserialization - SampleStructure JSON Large array") {
-            for _ in 1...runs {
-                _ = try JSONSerialization.jsonObject(with: testData.sampleDataLargeArray)
-            }
+        timing(name: "JSONDeserialization - SampleStructure JSON Large array", runs: runs) {
+            _ = try JSONSerialization.jsonObject(with: testData.sampleDataLargeArray)
         }
 
-        timing(name: "JSONDecoder - SampleStructure JSON Large array") {
-            for _ in 1...runs {
-                _ = try JSONDecoder().decode([SampleStructure].self, from: testData.sampleDataLargeArray)
-            }
+        timing(name: "JSONDecoder - SampleStructure JSON Large array", runs: runs) {
+            _ = try JSONDecoder().decode([SampleStructure].self, from: testData.sampleDataLargeArray)
         }
 
-        timing(name: "IkigaJSON - SampleStruct JSON Large array") {
-            for _ in 1...runs {
-                _ = try IkigaJSONDecoder().decode([SampleStructure].self, from: testData.sampleDataLargeArray)
-            }
+        timing(name: "IkigaJSON - SampleStruct JSON Large array", runs: runs) {
+            _ = try IkigaJSONDecoder().decode([SampleStructure].self, from: testData.sampleDataLargeArray)
         }
 
 
-        timing(name: "JSONDeserialization - SampleStructure JSON Array of arrays") {
-            for _ in 1...runs {
-                _ = try JSONSerialization.jsonObject(with: testData.sampleDataArrayOfArrays)
-            }
+        timing(name: "JSONDeserialization - SampleStructure JSON Array of arrays", runs: runs) {
+            _ = try JSONSerialization.jsonObject(with: testData.sampleDataArrayOfArrays)
         }
 
-        timing(name: "JSONDecoder - SampleStructure JSON Array of arrays") {
-            for _ in 1...runs {
-                _ = try JSONDecoder().decode([[SampleStructure]].self, from: testData.sampleDataArrayOfArrays)
-            }
+        timing(name: "JSONDecoder - SampleStructure JSON Array of arrays", runs: runs) {
+            _ = try JSONDecoder().decode([[SampleStructure]].self, from: testData.sampleDataArrayOfArrays)
         }
 
-        timing(name: "IkigaJSON - SampleStruct JSON Array of arrays") {
-            for _ in 1...runs {
-                _ = try IkigaJSONDecoder().decode([[SampleStructure]].self, from: testData.sampleDataArrayOfArrays)
-            }
+        timing(name: "IkigaJSON - SampleStruct JSON Array of arrays", runs: runs) {
+            _ = try IkigaJSONDecoder().decode([[SampleStructure]].self, from: testData.sampleDataArrayOfArrays)
         }
     }
 
@@ -271,55 +227,40 @@ final class JSONTests: XCTestCase {
         try statsLogger.section()
 
         let zeros =  try JSONSerialization.jsonObject(with: testData.zerosJsonData)
-        timing(name: "Bridging \"0\" to Int") {
-            for _ in 1...runs {
-                _  = zeros as! [Int]
-            }
+        timing(name: "Bridging \"0\" to Int", runs: runs) {
+            _  = zeros as! [Int]
         }
 
-        timing(name: "Bridging \"0\" to Double") {
-            for _ in 1...runs {
-                _ = zeros as! [Double]
-            }
+        timing(name: "Bridging \"0\" to Double", runs: runs) {
+            _ = zeros as! [Double]
         }
 
         let zeroDotZeros =  try JSONSerialization.jsonObject(with: testData.zeroDotZerosJsonData)
-        timing(name: "Bridging \"0.0\" to Int") {
-            for _ in 1...runs {
-                _ = zeroDotZeros as! [Int]
-            }
+        timing(name: "Bridging \"0.0\" to Int", runs: runs) {
+            _ = zeroDotZeros as! [Int]
         }
 
-        timing(name: "Bridging \"0.0\" to Double") {
-            for _ in 1...runs {
-                _ = zeroDotZeros as! [Double]
-            }
+        timing(name: "Bridging \"0.0\" to Double", runs: runs) {
+            _ = zeroDotZeros as! [Double]
         }
 
         let intMins =  try JSONSerialization.jsonObject(with: testData.intMinsJsonData)
-        timing(name: "Bridging Int.min to Int") {
-            for _ in 1...runs {
-                _ = intMins as! [Int]
-            }
+        timing(name: "Bridging Int.min to Int", runs: runs) {
+            _ = intMins as! [Int]
         }
 
-        timing(name: "Bridging Int.min to Double") {
-            for _ in 1...runs {
-                _ = intMins as! [Int]
-            }
+        timing(name: "Bridging Int.min to Double", runs: runs) {
+            _ = intMins as! [Int]
         }
 
         let intMinDotZeros =  try JSONSerialization.jsonObject(with: testData.intMinDotZerosJsonData)
-        timing(name: "Bridging \"Int.min.0\" to Int") {
-            for _ in 1...runs {
-                _ = intMinDotZeros as! [Int]
-            }
+        timing(name: "Bridging \"Int.min.0\" to Int", runs: runs) {
+            _ = intMinDotZeros as! [Int]
         }
 
-        timing(name: "Bridging \"Int.min.0\" to Double") {
-            for _ in 1...runs {
-                _ = intMinDotZeros as! [Int]
-            }
+        timing(name: "Bridging \"Int.min.0\" to Double", runs: runs) {
+            _ = intMinDotZeros as! [Int]
         }
+
     }
 }

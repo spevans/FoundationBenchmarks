@@ -41,13 +41,13 @@ final class DecimalTests: XCTestCase {
 
         let stringDoubles = randomDoubles.map { $0.description }
 
-        timing(name: "Decimal.init(Double)") {
+        timing(name: "Decimal.init(Double)", runs: 1) {
             for d in randomDoubles {
                 _ = Decimal(d)
             }
         }
 
-        timing(name: "Decimal(string:)") {
+        timing(name: "Decimal(string:)", runs: 1) {
             for d in stringDoubles {
                 _ = Decimal(string: d)
             }

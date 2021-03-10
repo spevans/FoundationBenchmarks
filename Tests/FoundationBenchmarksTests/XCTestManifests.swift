@@ -31,12 +31,18 @@ public func autoreleasepool<Result>(invoking body: () throws -> Result) rethrows
 }
 #endif
 
-internal func timing(name: String, execute: () throws -> Void) {
-    let start = Date()
+internal func timing(name: String, runs: Int, execute: () throws -> Void) {
     do {
+        let start: Date
         do {
+            // Do a warmup run
+            try execute()
+            start = Date()
+
             try autoreleasepool {
-                try execute()
+                for _ in 1...runs {
+                    try execute()
+                }
             }
         } catch {
             fatalError("Error running test: '\(name)': \(error)")
