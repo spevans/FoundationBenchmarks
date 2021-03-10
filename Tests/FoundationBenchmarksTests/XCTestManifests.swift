@@ -34,8 +34,12 @@ public func autoreleasepool<Result>(invoking body: () throws -> Result) rethrows
 internal func timing(name: String, execute: () throws -> Void) {
     let start = Date()
     do {
-        try autoreleasepool {
-            try execute()
+        do {
+            try autoreleasepool {
+                try execute()
+            }
+        } catch {
+            fatalError("Error running test: '\(name)': \(error)")
         }
         let time = Decimal(Int(-start.timeIntervalSinceNow * 1000))
         try statsLogger.benchmark(name: name, units: "ms")
@@ -140,7 +144,7 @@ final class StatsLogger {
 
 
     func addEntry(result: Decimal) throws {
-        let padding = String(repeating: " ", count: 50 - benchmarkName.count)
+        let padding = String(repeating: " ", count: 60 - benchmarkName.count)
         print("\(benchmarkName)\(padding): \(result) \(benchmarkUnits)")
         try benchmarkDb?.addEntry(toolChainId: toolChainId!, benchmarkId: benchmarkId!, result: result)
     }

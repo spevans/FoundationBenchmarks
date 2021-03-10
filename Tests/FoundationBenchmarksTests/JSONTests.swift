@@ -21,6 +21,7 @@
 
 import XCTest
 import Foundation
+import IkigaJSON
 
 private let runs = { runsInTestMode() ?? 10 }()
 
@@ -39,6 +40,9 @@ private struct TestData {
     let doublesJsonData: Data
     let decimalsJsonData: Data
     let someNumbersJsonData: Data
+    let sampleDataLargeArray: Data
+    let sampleDataArrayOfArrays: Data
+
 
     init() throws {
 
@@ -75,6 +79,22 @@ private struct TestData {
         doublesJsonData = try JSONEncoder().encode(doubles)
         decimalsJsonData = try JSONEncoder().encode(decimals)
         someNumbersJsonData = try JSONEncoder().encode(someNumbers)
+
+        // Make the SampleStructure JSON a large to consume more time but repeating the elements inside on large array
+        // eg [ <sample structure>, <sample structure>, ... ]
+        var sampleDataLarge1 = "["
+        sampleDataLarge1.reserveCapacity(SampleStructure.sampleJSON.count * 1000)
+        sampleDataLarge1.append((1 ... 100).map { _ in  SampleStructure.sampleJSON }.joined(separator: ","))
+        sampleDataLarge1.append("]")
+        sampleDataLargeArray = sampleDataLarge1.data(using: .utf8)!
+
+        // Now make one array where each element is the sample structure array,
+        // eg [ [<sample structure>], [<sample structure>], ... ]
+        var sampleDataLarge2 = "["
+        sampleDataLarge2.reserveCapacity(SampleStructure.sampleJSON.count * 1000)
+        sampleDataLarge2.append((1 ... 100).map { _ in "[ \(SampleStructure.sampleJSON) ]" }.joined(separator: ","))
+        sampleDataLarge2.append("]")
+        sampleDataArrayOfArrays = sampleDataLarge2.data(using: .utf8)!
     }
 }
 
@@ -92,7 +112,8 @@ final class JSONTests: XCTestCase {
     static var allTests = [
         ("testDeserialization", testDeserializationNumbers),
         ("testDecoding", testDecoding),
-        ("testBridging", testBridging)
+        ("testBridging", testBridging),
+        ("testSampleStructureJSON", testSampleStructureJSON),
     ]
 
 
@@ -200,6 +221,47 @@ final class JSONTests: XCTestCase {
         timing(name: "JSONDecoder - someNumbers") {
             for _ in 1...runs {
                 _ = try JSONDecoder().decode([SomeNumbers].self, from: testData.someNumbersJsonData)
+            }
+        }
+    }
+
+    func testSampleStructureJSON() throws {
+        try statsLogger.section()
+
+        timing(name: "JSONDeserialization - SampleStructure JSON Large array") {
+            for _ in 1...runs {
+                _ = try JSONSerialization.jsonObject(with: testData.sampleDataLargeArray)
+            }
+        }
+
+        timing(name: "JSONDecoder - SampleStructure JSON Large array") {
+            for _ in 1...runs {
+                _ = try JSONDecoder().decode([SampleStructure].self, from: testData.sampleDataLargeArray)
+            }
+        }
+
+        timing(name: "IkigaJSON - SampleStruct JSON Large array") {
+            for _ in 1...runs {
+                _ = try IkigaJSONDecoder().decode([SampleStructure].self, from: testData.sampleDataLargeArray)
+            }
+        }
+
+
+        timing(name: "JSONDeserialization - SampleStructure JSON Array of arrays") {
+            for _ in 1...runs {
+                _ = try JSONSerialization.jsonObject(with: testData.sampleDataArrayOfArrays)
+            }
+        }
+
+        timing(name: "JSONDecoder - SampleStructure JSON Array of arrays") {
+            for _ in 1...runs {
+                _ = try JSONDecoder().decode([[SampleStructure]].self, from: testData.sampleDataArrayOfArrays)
+            }
+        }
+
+        timing(name: "IkigaJSON - SampleStruct JSON Array of arrays") {
+            for _ in 1...runs {
+                _ = try IkigaJSONDecoder().decode([[SampleStructure]].self, from: testData.sampleDataArrayOfArrays)
             }
         }
     }
