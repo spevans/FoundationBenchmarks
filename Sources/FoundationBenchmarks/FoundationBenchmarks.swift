@@ -70,10 +70,10 @@ struct Options: ParsableArguments {
     @Option(help: "SQLite benchmarks file.")
     var filename = BenchmarksDB.defaultFilename
 
-    @Option(help: "Prefixes to remove from all toolchain names.")
+    @Option(help: "Prefixes to remove from all toolchain names. Comma separated listed, removed sequentially eg --remove-prefixes=swift-")
     var removePrefixes: String?
 
-    @Option(help: "Suffixes to remove from all toolchain names.")
+    @Option(help: "Suffixes to remove from all toolchain names. Comma separated listed, removed sequentially eg --remove-suffixes=-ubuntu20.04,-a")
     var removeSuffixes: String?
 
     @Flag(help: "Use HTML for output")
@@ -149,9 +149,24 @@ extension FoundationBenchmarks {
                         throw RuntimeError(description: "Invalid toolchain '\(arg)': cant find exectable \(execURL.path)")
                     }
                     executableURL = execURL
-                    baseName = baseURL.lastPathComponent
+                    var _baseName = baseURL.lastPathComponent
+                    if let prefixes = options.removePrefixes {
+                        for prefix in prefixes.split(separator: ",") {
+                            if _baseName.hasPrefix(prefix) {
+                                _baseName = _baseName.replacingOccurrences(of: prefix, with: "", options: .anchored)
+                            }
+                        }
+                    }
+                    if let suffixes = options.removeSuffixes {
+                        for suffix in suffixes.split(separator: ",") {
+                            if _baseName.hasSuffix(suffix) {
+                                _baseName = _baseName.replacingOccurrences(of: suffix, with: "", options: [.anchored, .backwards])
+                            }
+                        }
+                    }
+                    baseName = _baseName
                 }
-                print("Adding toolchain:", baseName)
+                print("Adding toolchain:", baseName, "path:", executableURL?.absoluteString ?? "swift")
                 let dbId = try benchmarkDb.addToolChain(name: baseName)
                 toolChains.append(ToolChain(dbid: dbId, name: baseName, executableURL: executableURL))
             }
@@ -177,14 +192,15 @@ extension FoundationBenchmarks {
                     env["BENCHMARKS_DBID"] = toolChain.dbid.description
                     env["BENCHMARKS_DBFILE"] = options.filename
                     process.environment = env
+                    let buildDir = ".build-\(toolChain.buildDirectoryName)"
 
-                    print("Running with toolChain: \(toolChain.name) --filter \(filter)")
+                    print("Running with toolChain: \(toolChain.name) --filter \(filter) --build-path \(buildDir)")
                     if let executableURL = toolChain.executableURL {
                         process.executableURL = executableURL
-                        process.arguments = ["test", "-c", "release", "--filter", filter ]
+                        process.arguments = ["test", "-c", "release", "--build-path", buildDir, "--filter", filter ]
                     } else {
                         process.executableURL = URL(fileURLWithPath: "/bin/sh")
-                        process.arguments = ["-c", "swift test -c release --filter \(filter)" ]
+                        process.arguments = ["-c", "swift test -c release --build-path \(buildDir) --filter \(filter)" ]
                     }
                     try process.run()
                     process.waitUntilExit()

@@ -33,6 +33,13 @@ public struct ToolChain {
         self.name = name
         self.executableURL = executableURL
     }
+
+    // The name to use for the --build-path argument
+    public var buildDirectoryName: String {
+        var directory = name
+        directory = directory.replacingOccurrences(of: " ", with: "_")
+        return directory
+    }
 }
 
 
