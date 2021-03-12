@@ -121,7 +121,7 @@ final class JSONTests: XCTestCase {
         try statsLogger.section()
 
         timing(name: "JSONSerialization.jsonObject - \"0\"", runs: runs) {
-            try JSONSerialization.jsonObject(with: testData.zerosJsonData)
+            _ = try JSONSerialization.jsonObject(with: testData.zerosJsonData)
         }
 
         timing(name: "JSONSerialization.jsonObject - \"0.0\"", runs: runs) {
@@ -172,7 +172,7 @@ final class JSONTests: XCTestCase {
             _ = try JSONDecoder().decode([Int].self, from: testData.intMinsJsonData)
         }
 
-        timing(name: "JSONDecoder - \"Int.min\".0 to Int", runs: runs) {
+        timing(name: "JSONDecoder - \"Int.min.0\" to Int", runs: runs) {
             _ = try JSONDecoder().decode([Int].self, from: testData.intMinsJsonData)
         }
 
