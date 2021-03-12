@@ -73,43 +73,63 @@ public struct Benchmark {
 
 public struct ToolChainResults {
     public let toolChain: ToolChain
-    public let results: [Int64: String]
+    public let results: [Int64: String]?
+    public let maxTotalWidth: Int        // Header v result + difference + pct
     public let maxResultWidth: Int
-    public let pctResults: [Int64: Int]?
-    public let maxPctResultWidth: Int
+    public let differences: [Int64: String]?
+    public let maxDifferencesWidth: Int
+    public let pctDifferences: [Int64: Int]?
+    public let maxPctDifferencesWidth: Int
 
 
-    public init(toolChain: ToolChain, benchmarks: [Benchmark], results: [Int64: String],
-                pctResults: [Int64: Int]? = nil) {
+    public init(toolChain: ToolChain, benchmarks: [Benchmark],
+                results: [Int64: String]?,
+                differences: [Int64: String]? = nil,
+                pctDifferences: [Int64: Int]? = nil) {
         self.toolChain = toolChain
         self.results = results
-        self.pctResults = pctResults
+        self.pctDifferences = pctDifferences
+        self.differences = differences
 
-        var maxWidth = toolChain.name.count
+        var maxWidth = 0
         for benchmark in benchmarks {
-            if let value = results[benchmark.dbid] {
+            if let value = results?[benchmark.dbid] {
                 let width = value.count + 1 + benchmark.units.count
                 maxWidth = max(maxWidth, width)
             }
         }
         maxResultWidth = maxWidth
 
-        var maxPctWidth = 0
-        if let pctResults = pctResults {
+        maxWidth = 0
+        if let differences = differences {
             for benchmark in benchmarks {
-                if let value = pctResults[benchmark.dbid] {
-                    let width = value.description.count + 1 + (value > 0 ? 1 : 0)
-                    maxPctWidth = max(maxPctWidth, width)
+                if let value = differences[benchmark.dbid] {
+                    let width = 2 + value.description.count + 1 + benchmark.units.count
+                    maxWidth = max(maxWidth, width)
                 }
             }
         }
-        maxPctResultWidth = maxPctWidth
+        maxDifferencesWidth = maxWidth
+
+
+        maxWidth = 0
+        if let pctDifferences = pctDifferences {
+            for benchmark in benchmarks {
+                if let value = pctDifferences[benchmark.dbid] {
+                    let width = 2 + value.description.count + 1 + (value > 0 ? 1 : 0)
+                    maxWidth = max(maxWidth, width)
+                }
+            }
+        }
+        maxPctDifferencesWidth = maxWidth
+        maxTotalWidth = max(toolChain.name.count, maxResultWidth + maxDifferencesWidth + maxPctDifferencesWidth)
     }
 
-    public var isDifferenceResults: Bool { pctResults != nil }
+    public var hasResults: Bool { results != nil }  // A toolchain result might only contain differences
+    public var hasDifferences: Bool { differences != nil && pctDifferences != nil }
 
-    public func pctResultFor(benchmarkId: Int64) -> String {
-        if let results = pctResults, let value = results[benchmarkId] {
+    public func pctDifferencesFor(benchmarkId: Int64) -> String {
+        if let results = pctDifferences, let value = results[benchmarkId] {
             return (value > 1 ? "+" : "") + "\(value)%"
         } else {
             return ""

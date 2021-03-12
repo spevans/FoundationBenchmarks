@@ -43,25 +43,28 @@ private class DiffRounding: NSDecimalNumberBehaviors {
 
 
 private func calculateDifferences(_ toolChain1: ToolChainResults, _ toolChain2: ToolChainResults,
-                                  using benchmarks: [Benchmark], name: String = diffColumnHeading) -> ToolChainResults {
+                                  using benchmarks: [Benchmark], name: String = diffColumnHeading,
+                                  differencesOnly: Bool = false) -> ToolChainResults {
 
-    var results: [Int64: String] = [:]
+    var differences: [Int64: String] = [:]
     var percentDiff: [Int64: Int] = [:]
 
     for dbId in benchmarks.map({ $0.dbid }) {
-        if let previousResult = toolChain1.results[dbId], let previous = Decimal(string: previousResult),
-        let currentResult = toolChain2.results[dbId], let current = Decimal(string: currentResult) {
+        if let previousResult = toolChain1.results?[dbId], let previous = Decimal(string: previousResult),
+           let currentResult = toolChain2.results?[dbId], let current = Decimal(string: currentResult) {
             let difference = current - previous
 
-            results[dbId] = difference.description
+            differences[dbId] = difference.description
             // Decimal currently has issues returning an intValue if the mantissa > UInt64.max (bug)
             // so round it to 0dp before converting to .intValue
             let percentage = NSDecimalNumber(decimal: (difference * 100) / previous)
             percentDiff[dbId] = percentage.rounding(accordingToBehavior: DiffRounding()).intValue
         }
     }
-    return ToolChainResults(toolChain: ToolChain(dbid: -1, name: name), benchmarks: benchmarks,
-        results: results, pctResults: percentDiff)
+    let toolChain = differencesOnly ? ToolChain(dbid: -1, name: name) : toolChain2.toolChain
+    return ToolChainResults(toolChain: toolChain, benchmarks: benchmarks,
+                            results: differencesOnly ? nil : toolChain2.results,
+                            differences: differences, pctDifferences: percentDiff)
 }
 
 
@@ -69,13 +72,22 @@ private func resultsWithDifferences(_ results: [ToolChainResults], benchmarks: [
     var fullResults = [results[0]]
 
     for idx in 1..<results.endIndex {
-        fullResults.append(results[idx])
+       // fullResults.append(results[idx])
         fullResults.append(calculateDifferences(results[idx - 1], results[idx], using: benchmarks))
     }
     if results.count > 2, let lastResults = results.last {
-        fullResults.append(calculateDifferences(results[0], lastResults, using: benchmarks, name: firstToLast))
+        fullResults.append(calculateDifferences(results[0], lastResults, using: benchmarks, name: firstToLast, differencesOnly: true))
     }
     return fullResults
+}
+
+
+func firstToLastDescription(results: [ToolChainResults]) -> String? {
+    if results.count > 1, let first = results.first?.toolChain.name, let last = results.last?.toolChain.name {
+        return "First to Last compares \(first) to \(last)"
+    } else {
+        return nil
+    }
 }
 
 
@@ -84,18 +96,16 @@ func showStatsWith(results: [ToolChainResults], forBenchmarks benchmarks: [Bench
 
     let fullResults = resultsWithDifferences(results, benchmarks: benchmarks)
 
+    if let description = firstToLastDescription(results: results) {
+        print("\n\(description)")
+    }
     // Find longest section/benchmark name for padding.
     let maxSectionWidth = benchmarks.map { max($0.name.count, $0.sectionName.count) }.max() ?? 0
 
     // Create the separator between the heading row and the first data row
     var vSeparator = "|\(String(repeating: "-", count: maxSectionWidth + 2))|"
     for result in fullResults {
-        let width = result.maxResultWidth + 2
-        vSeparator += "\(String(repeating: "-", count: width))|"
-        if result.isDifferenceResults {
-            let width = max(result.maxPctResultWidth, percentageHeading.count) + 2
-            vSeparator += "\(String(repeating: "-", count: width))|"
-        }
+        vSeparator += "\(String(repeating: "-", count: result.maxTotalWidth + 2))|"
     }
 
     var currentSection = ""
@@ -103,18 +113,13 @@ func showStatsWith(results: [ToolChainResults], forBenchmarks benchmarks: [Bench
         if benchmark.sectionName != currentSection {
             currentSection = benchmark.sectionName
 
-            // Header with Toolchain name and 'difference' / 'pct' columns
+            // Header with Toolchain name.
             let spacing = String(repeating: " ", count: maxSectionWidth - currentSection.count)
             print("\n| \(currentSection)\(spacing) |", terminator: "")
             for result in fullResults {
-                let maxWidth = result.maxResultWidth
+                let maxWidth = result.maxTotalWidth
                 let spacing = String(repeating: " ", count: maxWidth - result.toolChain.name.count)
                 print(" \(spacing)\(result.toolChain.name) |", terminator: "")
-                if result.isDifferenceResults {
-                    let maxWidth = max(result.maxPctResultWidth, percentageHeading.count)
-                    let spacing = String(repeating: " ", count: maxWidth - percentageHeading.count)
-                    print(" \(spacing)\(percentageHeading) |", terminator: "")
-                }
             }
             print("\n\(vSeparator)")
         }
@@ -122,23 +127,42 @@ func showStatsWith(results: [ToolChainResults], forBenchmarks benchmarks: [Bench
         let spacing = String(repeating: " ", count: maxSectionWidth - benchmark.name.count)
         print("| \(benchmark.name)\(spacing) |", terminator: "")
 
+        var fullLine = ""
         for toolChainResult in fullResults {
-            let maxWidth = toolChainResult.maxResultWidth
-            let entry: String
-            if let value = toolChainResult.results[benchmark.dbid] {
-                entry = "\(value) \(benchmark.units)"
+            var fullEntry = ""
+            if let result = toolChainResult.results?[benchmark.dbid] {
+                let entry = "\(result) \(benchmark.units)"
+                let padding = toolChainResult.maxResultWidth - entry.count
+                fullEntry.append(String(repeating: " ", count: padding))
+                fullEntry.append(entry)
             } else {
-                entry = ""
+                fullEntry.append(String(repeating: " ", count: toolChainResult.maxResultWidth))
             }
-            print(" \(String(repeating: " ", count: maxWidth - entry.count))\(entry) |", terminator: "")
 
-            if toolChainResult.isDifferenceResults {
-                let maxWidth = max(toolChainResult.maxPctResultWidth, percentageHeading.count)
-                let entry = toolChainResult.pctResultFor(benchmarkId: benchmark.dbid)
-                print(" \(String(repeating: " ", count: maxWidth - entry.count))\(entry) |", terminator: "")
+            if let difference = toolChainResult.differences?[benchmark.dbid] {
+                let entry = "\(difference) \(benchmark.units)"
+                let padding = toolChainResult.maxDifferencesWidth - entry.count
+                fullEntry.append(String(repeating: " ", count: padding))
+                fullEntry.append(entry)
+            } else {
+                fullEntry.append(String(repeating: " ", count: toolChainResult.maxDifferencesWidth))
             }
+
+            if let pctDifference = toolChainResult.pctDifferences?[benchmark.dbid] {
+                let entry = "\(pctDifference)%"
+                let padding = toolChainResult.maxPctDifferencesWidth - entry.count
+                fullEntry.append(String(repeating: " ", count: padding))
+                fullEntry.append(entry)
+            } else {
+                fullEntry.append(String(repeating: " ", count: toolChainResult.maxPctDifferencesWidth))
+            }
+
+            let fullEntryWidth = toolChainResult.maxResultWidth + toolChainResult.maxDifferencesWidth + toolChainResult.maxPctDifferencesWidth
+            let maxWidth = max(toolChainResult.toolChain.name.count, fullEntryWidth)
+            fullLine.append(" \(String(repeating: " ", count: maxWidth - fullEntry.count))\(fullEntry) |")
+
         }
-        print("")
+        print(fullLine)
     }
     print("")
 }
@@ -167,7 +191,7 @@ private let htmlHeader = """
             padding: 5pt;
         }
         td.spacer {
-            padding: 30pt;
+            padding: 10pt;
             border-bottom: 0pt;
             border-left: 0pt;
             border-right: 0pt;
@@ -185,54 +209,58 @@ func showHTMLStatsWith(results: [ToolChainResults], forBenchmarks benchmarks: [B
     let fullResults = resultsWithDifferences(results, benchmarks: benchmarks)
 
     print(htmlHeader)
+
+    if let description = firstToLastDescription(results: results) {
+        print("<br/><h3>\(description)</h3>")
+    }
+
     var currentSection = ""
+    print("\t<table>\n")
     for benchmark in benchmarks {
         if benchmark.sectionName != currentSection {
             if currentSection != "" {
                 print("\t<tr><td class=\"spacer\" colspan=\"100%\"></td></tr>")
-                print("    </table>\n    <!-- End of \(currentSection) -->\n")
+                print("\n\t<!-- End of \(currentSection) -->\n")
             }
 
             currentSection = benchmark.sectionName
 
             // Header with Toolchain name and 'difference' / 'pct' columns
-
-            print("    <!-- Start of \(currentSection) -->\n    <table>")
+            print("\t<!-- Start of \(currentSection) -->\n")
             print("\t<tr><th align=\"left\">\(currentSection)</th>", terminator: "")
             var oddColumn = false
             for toolChainResult in fullResults {
-                if !toolChainResult.isDifferenceResults {
-                    oddColumn.toggle()
-                }
+                oddColumn.toggle()
                 let rowClass = oddColumn ? "odd" : "even"
-                let colspan = toolChainResult.isDifferenceResults ? " colspan=\"2\"" : ""
-                print("<th class=\"\(rowClass)\"\(colspan)>\(toolChainResult.toolChain.name)</th>", terminator: "")
 
+                let colspan = (toolChainResult.hasResults ? 1 : 0) + (toolChainResult.hasDifferences ? 2 : 0)
+                precondition(colspan != 0)
+                print("<th class=\"\(rowClass)\" colspan=\"\(colspan)\">\(toolChainResult.toolChain.name)</th>", terminator: "")
             }
             print("</tr>")
         }
 
         print("\t<tr><td align=\"left\">\(benchmark.name)</td>", terminator: "")
         var oddColumn = false
+
         for toolChainResult in fullResults {
-            if !toolChainResult.isDifferenceResults {
-                oddColumn.toggle()
-            }
+            oddColumn.toggle()
             let rowClass = oddColumn ? "odd" : "even"
-            if let value = toolChainResult.results[benchmark.dbid] {
+            if let value = toolChainResult.results?[benchmark.dbid] {
                 // print the value
                 print("<td align=\"right\" class=\"\(rowClass)\">\(value) \(benchmark.units)</td>", terminator: "")
-            } else {
-                print("<td class=\"\(rowClass)\"></td>", terminator: "")
             }
-            if toolChainResult.isDifferenceResults {
-                let entry = toolChainResult.pctResultFor(benchmarkId: benchmark.dbid)
-                print("<td align=\"right\" class=\"\(rowClass)\">\(entry)</td>", terminator: "")
+
+            if let difference = toolChainResult.differences?[benchmark.dbid], let pctDifference = toolChainResult.pctDifferences?[benchmark.dbid] {
+                // print the difference / percentage
+                print("<td align=\"right\" class=\"\(rowClass)\">\(difference) \(benchmark.units)</td>", terminator: "")
+                let entry = pctDifference > 0 ? "+\(pctDifference)" : "\(pctDifference)"
+                print("<td align=\"right\" class=\"\(rowClass)\">\(entry) %</td>", terminator: "")
             }
         }
 
         print("</tr>")
     }
-    print("    </table>\n    <!-- End of \(currentSection) -->\n")
-    print("</body>\n</html>")
+    print("\t<!-- End of \(currentSection) -->\n\t</table>")
+    print("    </body>\n</html>")
 }
